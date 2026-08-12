@@ -16,6 +16,10 @@
     --text-faint: #9a9791;
     --accent: #2f6f4e;
     --accent-soft: #e8f1eb;
+    /* Data-mark colour, kept separate from --accent (which is UI/text ink).
+       Validated for the light chart surface: L 0.52, chroma 0.11, >= 3:1 vs #fff. */
+    --bar-fill: #1c7a4a;
+    --bar-track: #eceae6;
     --danger: #a33a2c;
     --radius: 10px;
     --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
@@ -32,6 +36,10 @@
       --text-faint: #77756f;
       --accent: #7dc9a0;
       --accent-soft: #26372e;
+      /* Dark mode is stepped separately, not an automatic flip:
+         L 0.65, chroma 0.13, >= 3:1 vs the dark card surface #232322. */
+      --bar-fill: #2eae6e;
+      --bar-track: #343432;
       --danger: #e2897c;
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
     }
@@ -148,6 +156,76 @@
   .bar { height: 7px; border-radius: 4px; background: var(--border); overflow: hidden; margin-top: 10px; }
   .bar > div { height: 100%; background: var(--accent); border-radius: 4px; transition: width .2s; }
 
+  /* ---------- view tabs ---------- */
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--border); }
+  .tab {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    border-radius: 0; padding: 8px 12px; margin-bottom: -1px;
+    color: var(--text-dim); font-weight: 550;
+  }
+  .tab:hover { color: var(--text); border-color: var(--border-strong); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .badge { display: inline-block; margin-left: 6px; padding: 1px 6px;
+    border-radius: 9px; background: var(--accent-soft); color: var(--accent);
+    font-size: 11.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+  /* ---------- browse: filter row (one row, above everything it scopes) ---------- */
+  .filters { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .filters input[type=search] { flex: 1; min-width: 0; }
+  .filters select { width: auto; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* ---------- browse: table ---------- */
+  /* Eight columns need room. Below ~820px the table scrolls sideways rather than
+     squeezing the food column until names wrap onto four lines and rows go tall. */
+  .table-scroll { overflow-x: auto; border-radius: var(--radius) var(--radius) 0 0; }
+  table.browse { table-layout: auto; min-width: 800px; }
+  table.browse td:nth-child(2) { min-width: 200px; }
+  table.browse th { padding: 0; vertical-align: bottom; }
+  table.browse th.num, table.browse th.col-pin, table.browse th.portion-col { padding: 10px 12px; }
+  button.sorth {
+    background: none; border: none; border-radius: 0; width: 100%;
+    padding: 10px 12px; text-align: inherit;
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--text-faint); line-height: 1.3;
+  }
+  th.num button.sorth { text-align: right; }
+  button.sorth span { display: block; font-weight: 400; text-transform: none;
+    letter-spacing: 0; font-size: 11px; }
+  button.sorth:hover { color: var(--text); }
+  th[aria-sort] button.sorth { color: var(--text); }
+  th[aria-sort] button.sorth::after { content: " ↓"; }
+  th[aria-sort=ascending] button.sorth::after { content: " ↑"; }
+
+  table.browse td { padding: 6px 12px; }
+  table.browse .bname { font-weight: 500; }
+  table.browse .bgrp { color: var(--text-faint); font-size: 11.5px; }
+  table.browse .est { color: var(--text-faint); font-weight: 400; }
+  .col-pin { width: 30px; }
+  .portion-col { color: var(--text-dim); font-size: 13px; white-space: nowrap; }
+  /* Values wear text ink; the bar beside them carries the magnitude. */
+  table.browse td.val { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.browse td.dim { color: var(--text-dim); }
+
+  /* inline magnitude bar: thin, single hue, square at the baseline,
+     4px rounded data-end, no border — the track does the separating */
+  .mbar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+  .mbar-track { width: 62px; height: 7px; background: var(--bar-track);
+    border-radius: 2px; overflow: hidden; flex: none; }
+  .mbar-fill { height: 100%; background: var(--bar-fill);
+    border-radius: 0 4px 4px 0; min-width: 2px; }
+  .pin-btn { background: none; border: none; padding: 2px 4px; border-radius: 4px;
+    color: var(--border-strong); font-size: 15px; line-height: 1; }
+  .pin-btn:hover { color: var(--accent); border-color: transparent; }
+  .pin-btn[aria-pressed=true] { color: var(--accent); }
+  tr.pinned { background: var(--accent-soft); }
+  tr.pin-sep td { padding: 0; border-bottom: 1px solid var(--border-strong); }
+  .add-btn { padding: 3px 8px; font-size: 12px; }
+  .browse-foot { padding: 10px 16px; border-top: 1px solid var(--border);
+    background: var(--surface-2); border-radius: 0 0 var(--radius) var(--radius);
+    color: var(--text-faint); font-size: 12px; }
+
   /* ---------- usda panel ---------- */
   .usda { border-top: 1px solid var(--border); padding: 16px; }
   .usda-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -172,6 +250,17 @@
 
   <h1>Protein Calculator</h1>
   <p class="sub">Add what you ate — 3 eggs, 300&nbsp;g lean steak — and see where the protein comes from.</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tab-calc" role="tab" aria-selected="true" aria-controls="view-calc">
+      Calculator<span class="badge" id="tab-count" hidden></span>
+    </button>
+    <button class="tab" id="tab-browse" role="tab" aria-selected="false" aria-controls="view-browse">
+      Browse foods
+    </button>
+  </div>
+
+<div id="view-calc" role="tabpanel" aria-labelledby="tab-calc">
 
   <div class="card card-pad">
     <label class="field" for="search">Add a food</label>
@@ -256,6 +345,53 @@
     <button id="clear-all" class="ghost" style="color:var(--text-dim)">Clear all items</button>
   </div>
 
+</div><!-- /view-calc -->
+
+<div id="view-browse" role="tabpanel" aria-labelledby="tab-browse" hidden>
+
+  <div class="filters">
+    <input type="search" id="b-q" placeholder="Filter foods…" autocomplete="off" aria-label="Filter foods by name">
+    <select id="b-group" aria-label="Filter by food group"><option value="">All groups</option></select>
+    <div class="spacer"></div>
+    <span class="hint" id="b-count" style="margin:0"></span>
+  </div>
+
+  <div class="card">
+    <div class="table-scroll">
+    <table class="browse">
+      <thead>
+        <tr>
+          <th class="col-pin" title="Pin a food to keep it at the top while you sort and filter">
+            <span aria-hidden="true">☆</span><span class="sr-only">Pinned</span>
+          </th>
+          <th><button class="sorth" data-sort="name">Food</button></th>
+          <th class="num"><button class="sorth" data-sort="p">Protein<span>/100 g</span></button></th>
+          <th class="portion-col">Typical portion</th>
+          <th class="num"><button class="sorth" data-sort="pp">Protein<span>/portion</span></button></th>
+          <th class="num"><button class="sorth" data-sort="k">Energy<span>/100 g</span></button></th>
+          <th class="num"><button class="sorth" data-sort="pk">Protein<span>/100 kcal</span></button></th>
+          <th class="col-act"></th>
+        </tr>
+      </thead>
+      <tbody id="b-rows"></tbody>
+    </table>
+    </div>
+    <div class="browse-foot">
+      <span id="b-legend"></span>
+    </div>
+  </div>
+
+  <p class="foot">
+    <strong style="font-weight:600">Protein per 100&nbsp;kcal</strong> is the column worth studying:
+    it says how much protein a food carries for the calories it costs. Egg white, white fish and
+    fat-free dairy sit at the top; nuts and cheese look strong per 100&nbsp;g but drop sharply here,
+    because most of their weight is fat.<br>
+    Portion figures use the first household measure for each food — the amounts are shown so you can
+    see what is being assumed.
+  </p>
+
+</div><!-- /view-browse -->
+
   <p class="foot">
     119 of the 130 built-in foods take their protein figure straight from USDA Standard
     Reference 28, the dataset FoodData Central serves as “SR&nbsp;Legacy”; each row carries its
@@ -273,6 +409,8 @@
    FOOD DATABASE
 
    p     = grams of protein per 100 g of the food.
+   k     = kilocalories per 100 g (USDA nutrient 208), used only by the
+           browse view to rank foods by protein per calorie.
    units = household portions, each expressed in grams.
            "g" and "oz" are added to every food automatically,
            and all arithmetic converts to grams first.
@@ -295,143 +433,143 @@
    ============================================================ */
 const FOODS = [
   // ---- Eggs & dairy ----
-  { name: "Egg, whole, raw", group: "Eggs & dairy", p: 12.6, units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },  // SR28 01123
-  { name: "Egg white, raw", group: "Eggs & dairy", p: 10.9, units: [["large egg white", 33]] },  // SR28 01124
-  { name: "Egg yolk, raw", group: "Eggs & dairy", p: 15.9, units: [["large yolk", 17]] },  // SR28 01125
-  { name: "Milk, whole (3.25%)", group: "Eggs & dairy", p: 3.1, units: [["cup", 244], ["ml", 1.03]] },  // SR28 01211
-  { name: "Milk, skim", group: "Eggs & dairy", p: 3.4, units: [["cup", 245], ["ml", 1.03]] },  // SR28 01085
-  { name: "Greek yogurt, plain, nonfat", group: "Eggs & dairy", p: 10.2, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01256
-  { name: "Greek yogurt, plain, whole", group: "Eggs & dairy", p: 9, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01293
-  { name: "Skyr, plain", group: "Eggs & dairy", p: 11, est: 1, units: [["150 g tub", 150]] },  // label
-  { name: "Yogurt, plain, whole milk", group: "Eggs & dairy", p: 3.5, units: [["cup", 245]] },  // SR28 01116
-  { name: "Kefir, plain, lowfat", group: "Eggs & dairy", p: 3.8, units: [["cup", 243], ["ml", 1.03]] },  // SR28 01289
-  { name: "Cottage cheese, 2%", group: "Eggs & dairy", p: 10.4, units: [["cup", 226]] },  // SR28 01015
-  { name: "Cottage cheese, 4%", group: "Eggs & dairy", p: 11.1, units: [["cup", 226]] },  // SR28 01012
-  { name: "Quark, plain, low fat", group: "Eggs & dairy", p: 12, est: 1, units: [["250 g tub", 250]] },  // label
-  { name: "Ricotta, part skim", group: "Eggs & dairy", p: 11.4, units: [["cup", 246]] },  // SR28 01037
-  { name: "Cheddar cheese", group: "Eggs & dairy", p: 22.9, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01009
-  { name: "Mozzarella, part skim", group: "Eggs & dairy", p: 24.3, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01028
-  { name: "Mozzarella, whole milk", group: "Eggs & dairy", p: 22.2, units: [["slice", 28], ["cup, shredded", 112]] },  // SR28 01026
-  { name: "Parmesan, hard", group: "Eggs & dairy", p: 35.8, units: [["tbsp, grated", 5]] },  // SR28 01033
-  { name: "Swiss cheese", group: "Eggs & dairy", p: 27, units: [["slice", 28]] },  // SR28 01040
-  { name: "Gouda cheese", group: "Eggs & dairy", p: 24.9, units: [["slice", 28]] },  // SR28 01022
-  { name: "Feta cheese", group: "Eggs & dairy", p: 14.2, units: [["cup, crumbled", 150]] },  // SR28 01019
-  { name: "Halloumi", group: "Eggs & dairy", p: 22, est: 1, units: [["slice", 30]] },  // label
-  { name: "Goat cheese, soft", group: "Eggs & dairy", p: 18.5, units: [] },  // SR28 01159
-  { name: "Cream cheese", group: "Eggs & dairy", p: 6.2, units: [["tbsp", 15]] },  // SR28 01017
+  { name: "Egg, whole, raw", group: "Eggs & dairy", p: 12.6, k: 143, units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },  // SR28 01123
+  { name: "Egg white, raw", group: "Eggs & dairy", p: 10.9, k: 52, units: [["large egg white", 33]] },  // SR28 01124
+  { name: "Egg yolk, raw", group: "Eggs & dairy", p: 15.9, k: 322, units: [["large yolk", 17]] },  // SR28 01125
+  { name: "Milk, whole (3.25%)", group: "Eggs & dairy", p: 3.1, k: 61, units: [["cup", 244], ["ml", 1.03]] },  // SR28 01211
+  { name: "Milk, skim", group: "Eggs & dairy", p: 3.4, k: 34, units: [["cup", 245], ["ml", 1.03]] },  // SR28 01085
+  { name: "Greek yogurt, plain, nonfat", group: "Eggs & dairy", p: 10.2, k: 59, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01256
+  { name: "Greek yogurt, plain, whole", group: "Eggs & dairy", p: 9, k: 97, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01293
+  { name: "Skyr, plain", group: "Eggs & dairy", p: 11, k: 60, est: 1, units: [["150 g tub", 150]] },  // label
+  { name: "Yogurt, plain, whole milk", group: "Eggs & dairy", p: 3.5, k: 61, units: [["cup", 245]] },  // SR28 01116
+  { name: "Kefir, plain, lowfat", group: "Eggs & dairy", p: 3.8, k: 41, units: [["cup", 243], ["ml", 1.03]] },  // SR28 01289
+  { name: "Cottage cheese, 2%", group: "Eggs & dairy", p: 10.4, k: 81, units: [["cup", 226]] },  // SR28 01015
+  { name: "Cottage cheese, 4%", group: "Eggs & dairy", p: 11.1, k: 98, units: [["cup", 226]] },  // SR28 01012
+  { name: "Quark, plain, low fat", group: "Eggs & dairy", p: 12, k: 67, est: 1, units: [["250 g tub", 250]] },  // label
+  { name: "Ricotta, part skim", group: "Eggs & dairy", p: 11.4, k: 138, units: [["cup", 246]] },  // SR28 01037
+  { name: "Cheddar cheese", group: "Eggs & dairy", p: 22.9, k: 404, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01009
+  { name: "Mozzarella, part skim", group: "Eggs & dairy", p: 24.3, k: 254, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01028
+  { name: "Mozzarella, whole milk", group: "Eggs & dairy", p: 22.2, k: 300, units: [["slice", 28], ["cup, shredded", 112]] },  // SR28 01026
+  { name: "Parmesan, hard", group: "Eggs & dairy", p: 35.8, k: 392, units: [["tbsp, grated", 5]] },  // SR28 01033
+  { name: "Swiss cheese", group: "Eggs & dairy", p: 27, k: 393, units: [["slice", 28]] },  // SR28 01040
+  { name: "Gouda cheese", group: "Eggs & dairy", p: 24.9, k: 356, units: [["slice", 28]] },  // SR28 01022
+  { name: "Feta cheese", group: "Eggs & dairy", p: 14.2, k: 264, units: [["cup, crumbled", 150]] },  // SR28 01019
+  { name: "Halloumi", group: "Eggs & dairy", p: 22, k: 330, est: 1, units: [["slice", 30]] },  // label
+  { name: "Goat cheese, soft", group: "Eggs & dairy", p: 18.5, k: 264, units: [] },  // SR28 01159
+  { name: "Cream cheese", group: "Eggs & dairy", p: 6.2, k: 350, units: [["tbsp", 15]] },  // SR28 01017
   // ---- Poultry & meat ----
-  { name: "Chicken breast, skinless, raw", group: "Poultry & meat", p: 22.5, units: [["breast", 272]] },  // SR28 05062
-  { name: "Chicken breast, skinless, cooked", group: "Poultry & meat", p: 30.5, units: [["breast", 196]] },  // SR28 05747
-  { name: "Chicken thigh, skinless, cooked", group: "Poultry & meat", p: 24.8, units: [["thigh", 116]] },  // SR28 05098
-  { name: "Chicken, rotisserie, breast meat", group: "Poultry & meat", p: 28, units: [] },  // SR28 05000
-  { name: "Turkey breast, raw", group: "Poultry & meat", p: 23.7, units: [] },  // SR28 05219
-  { name: "Turkey breast, cooked", group: "Poultry & meat", p: 29, units: [] },  // SR28 05733
-  { name: "Turkey, deli slices", group: "Poultry & meat", p: 16.3, units: [["slice", 15]] },  // SR28 07081
-  { name: "Beef steak, lean (sirloin), raw", group: "Poultry & meat", p: 21.9, units: [] },  // SR28 23625
-  { name: "Beef steak, lean (sirloin), cooked", group: "Poultry & meat", p: 30.3, units: [] },  // SR28 13455
-  { name: "Beef, ribeye, cooked", group: "Poultry & meat", p: 26.6, units: [] },  // SR28 13096
-  { name: "Ground beef, 90% lean, raw", group: "Poultry & meat", p: 20, units: [] },  // SR28 23562
-  { name: "Ground beef, 90% lean, cooked", group: "Poultry & meat", p: 26.1, units: [] },  // SR28 23563
-  { name: "Beef jerky", group: "Poultry & meat", p: 33.2, units: [["28 g bag", 28]] },  // SR28 19002
-  { name: "Beef liver, cooked", group: "Poultry & meat", p: 29.1, units: [] },  // SR28 13326
-  { name: "Pork loin, raw", group: "Poultry & meat", p: 21.4, units: [] },  // SR28 10024
-  { name: "Pork loin, cooked", group: "Poultry & meat", p: 27.1, units: [] },  // SR28 10023
-  { name: "Pork tenderloin, raw", group: "Poultry & meat", p: 20.9, units: [] },  // SR28 10060
-  { name: "Ham, cured, lean", group: "Poultry & meat", p: 18.3, units: [["slice (1 oz)", 28], ["cup, diced", 140]] },  // SR28 10182
-  { name: "Bacon, cooked", group: "Poultry & meat", p: 33.9, units: [["slice", 11.5]] },  // SR28 10862
-  { name: "Pork sausage, cooked", group: "Poultry & meat", p: 18.5, units: [["link", 23], ["patty", 27]] },  // SR28 07064
-  { name: "Hot dog, beef", group: "Poultry & meat", p: 11.7, units: [["frankfurter", 48]] },  // SR28 07945
-  { name: "Lamb, lean, cooked", group: "Poultry & meat", p: 28.2, units: [] },  // SR28 17004
-  { name: "Duck breast, skinless, cooked", group: "Poultry & meat", p: 27.6, units: [] },  // SR28 05316
-  { name: "Venison, cooked", group: "Poultry & meat", p: 30.2, units: [] },  // SR28 17165
+  { name: "Chicken breast, skinless, raw", group: "Poultry & meat", p: 22.5, k: 120, units: [["breast", 272]] },  // SR28 05062
+  { name: "Chicken breast, skinless, cooked", group: "Poultry & meat", p: 30.5, k: 151, units: [["breast", 196]] },  // SR28 05747
+  { name: "Chicken thigh, skinless, cooked", group: "Poultry & meat", p: 24.8, k: 179, units: [["thigh", 116]] },  // SR28 05098
+  { name: "Chicken, rotisserie, breast meat", group: "Poultry & meat", p: 28, k: 144, units: [] },  // SR28 05000
+  { name: "Turkey breast, raw", group: "Poultry & meat", p: 23.7, k: 114, units: [] },  // SR28 05219
+  { name: "Turkey breast, cooked", group: "Poultry & meat", p: 29, k: 164, units: [] },  // SR28 05733
+  { name: "Turkey, deli slices", group: "Poultry & meat", p: 16.3, k: 100, units: [["slice", 15]] },  // SR28 07081
+  { name: "Beef steak, lean (sirloin), raw", group: "Poultry & meat", p: 21.9, k: 135, units: [] },  // SR28 23625
+  { name: "Beef steak, lean (sirloin), cooked", group: "Poultry & meat", p: 30.3, k: 188, units: [] },  // SR28 13455
+  { name: "Beef, ribeye, cooked", group: "Poultry & meat", p: 26.6, k: 265, units: [] },  // SR28 13096
+  { name: "Ground beef, 90% lean, raw", group: "Poultry & meat", p: 20, k: 176, units: [] },  // SR28 23562
+  { name: "Ground beef, 90% lean, cooked", group: "Poultry & meat", p: 26.1, k: 217, units: [] },  // SR28 23563
+  { name: "Beef jerky", group: "Poultry & meat", p: 33.2, k: 410, units: [["28 g bag", 28]] },  // SR28 19002
+  { name: "Beef liver, cooked", group: "Poultry & meat", p: 29.1, k: 191, units: [] },  // SR28 13326
+  { name: "Pork loin, raw", group: "Poultry & meat", p: 21.4, k: 143, units: [] },  // SR28 10024
+  { name: "Pork loin, cooked", group: "Poultry & meat", p: 27.1, k: 248, units: [] },  // SR28 10023
+  { name: "Pork tenderloin, raw", group: "Poultry & meat", p: 20.9, k: 109, units: [] },  // SR28 10060
+  { name: "Ham, cured, lean", group: "Poultry & meat", p: 18.3, k: 162, units: [["slice (1 oz)", 28], ["cup, diced", 140]] },  // SR28 10182
+  { name: "Bacon, cooked", group: "Poultry & meat", p: 33.9, k: 468, units: [["slice", 11.5]] },  // SR28 10862
+  { name: "Pork sausage, cooked", group: "Poultry & meat", p: 18.5, k: 325, units: [["link", 23], ["patty", 27]] },  // SR28 07064
+  { name: "Hot dog, beef", group: "Poultry & meat", p: 11.7, k: 322, units: [["frankfurter", 48]] },  // SR28 07945
+  { name: "Lamb, lean, cooked", group: "Poultry & meat", p: 28.2, k: 206, units: [] },  // SR28 17004
+  { name: "Duck breast, skinless, cooked", group: "Poultry & meat", p: 27.6, k: 140, units: [] },  // SR28 05316
+  { name: "Venison, cooked", group: "Poultry & meat", p: 30.2, k: 158, units: [] },  // SR28 17165
   // ---- Fish & seafood ----
-  { name: "Salmon, Atlantic, farmed, raw", group: "Fish & seafood", p: 20.4, units: [["half fillet", 198]] },  // SR28 15236
-  { name: "Salmon, Atlantic, farmed, cooked", group: "Fish & seafood", p: 22.1, units: [["half fillet", 178]] },  // SR28 15237
-  { name: "Salmon, smoked", group: "Fish & seafood", p: 18.3, units: [["100 g pack", 100]] },  // SR28 15077
-  { name: "Tuna, white (albacore), canned in water", group: "Fish & seafood", p: 23.6, units: [["can (5 oz), drained", 142]] },  // SR28 15126
-  { name: "Tuna, light, canned in water", group: "Fish & seafood", p: 19.4, units: [["can (5 oz), drained", 142]] },  // SR28 15121
-  { name: "Tuna, yellowfin, raw", group: "Fish & seafood", p: 24.4, units: [] },  // SR28 15127
-  { name: "Cod, raw", group: "Fish & seafood", p: 17.8, units: [["fillet", 231]] },  // SR28 15015
-  { name: "Cod, cooked", group: "Fish & seafood", p: 22.8, units: [] },  // SR28 15016
-  { name: "Tilapia, raw", group: "Fish & seafood", p: 20.1, units: [["fillet", 116]] },  // SR28 15261
-  { name: "Trout, raw", group: "Fish & seafood", p: 20.8, units: [] },  // SR28 15114
-  { name: "Mackerel, raw", group: "Fish & seafood", p: 18.6, units: [] },  // SR28 15046
-  { name: "Sardines, canned in oil", group: "Fish & seafood", p: 24.6, units: [["can (3.75 oz), drained", 92]] },  // SR28 15088
-  { name: "Shrimp, raw", group: "Fish & seafood", p: 20.1, units: [["shrimp, large", 15]] },  // SR28 15270
-  { name: "Shrimp, cooked", group: "Fish & seafood", p: 24, units: [["shrimp, large", 11]] },  // SR28 15271
-  { name: "Crab, blue, cooked", group: "Fish & seafood", p: 17.9, units: [] },  // SR28 15140
-  { name: "Lobster, cooked", group: "Fish & seafood", p: 19, units: [] },  // SR28 15148
-  { name: "Scallops, raw", group: "Fish & seafood", p: 12.1, units: [] },  // SR28 15172
-  { name: "Mussels, cooked", group: "Fish & seafood", p: 23.8, units: [] },  // SR28 15165
-  { name: "Octopus, cooked", group: "Fish & seafood", p: 29.8, units: [] },  // SR28 15230
+  { name: "Salmon, Atlantic, farmed, raw", group: "Fish & seafood", p: 20.4, k: 208, units: [["half fillet", 198]] },  // SR28 15236
+  { name: "Salmon, Atlantic, farmed, cooked", group: "Fish & seafood", p: 22.1, k: 206, units: [["half fillet", 178]] },  // SR28 15237
+  { name: "Salmon, smoked", group: "Fish & seafood", p: 18.3, k: 117, units: [["100 g pack", 100]] },  // SR28 15077
+  { name: "Tuna, white (albacore), canned in water", group: "Fish & seafood", p: 23.6, k: 128, units: [["can (5 oz), drained", 142]] },  // SR28 15126
+  { name: "Tuna, light, canned in water", group: "Fish & seafood", p: 19.4, k: 86, units: [["can (5 oz), drained", 142]] },  // SR28 15121
+  { name: "Tuna, yellowfin, raw", group: "Fish & seafood", p: 24.4, k: 109, units: [] },  // SR28 15127
+  { name: "Cod, raw", group: "Fish & seafood", p: 17.8, k: 82, units: [["fillet", 231]] },  // SR28 15015
+  { name: "Cod, cooked", group: "Fish & seafood", p: 22.8, k: 105, units: [] },  // SR28 15016
+  { name: "Tilapia, raw", group: "Fish & seafood", p: 20.1, k: 96, units: [["fillet", 116]] },  // SR28 15261
+  { name: "Trout, raw", group: "Fish & seafood", p: 20.8, k: 148, units: [] },  // SR28 15114
+  { name: "Mackerel, raw", group: "Fish & seafood", p: 18.6, k: 205, units: [] },  // SR28 15046
+  { name: "Sardines, canned in oil", group: "Fish & seafood", p: 24.6, k: 208, units: [["can (3.75 oz), drained", 92]] },  // SR28 15088
+  { name: "Shrimp, raw", group: "Fish & seafood", p: 20.1, k: 85, units: [["shrimp, large", 15]] },  // SR28 15270
+  { name: "Shrimp, cooked", group: "Fish & seafood", p: 24, k: 99, units: [["shrimp, large", 11]] },  // SR28 15271
+  { name: "Crab, blue, cooked", group: "Fish & seafood", p: 17.9, k: 83, units: [] },  // SR28 15140
+  { name: "Lobster, cooked", group: "Fish & seafood", p: 19, k: 89, units: [] },  // SR28 15148
+  { name: "Scallops, raw", group: "Fish & seafood", p: 12.1, k: 69, units: [] },  // SR28 15172
+  { name: "Mussels, cooked", group: "Fish & seafood", p: 23.8, k: 172, units: [] },  // SR28 15165
+  { name: "Octopus, cooked", group: "Fish & seafood", p: 29.8, k: 164, units: [] },  // SR28 15230
   // ---- Supplements ----
-  { name: "Whey protein isolate powder", group: "Supplements", p: 85, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Whey protein concentrate powder", group: "Supplements", p: 80, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Casein protein powder", group: "Supplements", p: 75, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Pea protein powder", group: "Supplements", p: 80, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Soy protein isolate powder", group: "Supplements", p: 88.3, units: [["scoop (30 g)", 30]] },  // SR28 16122
-  { name: "Collagen peptides", group: "Supplements", p: 90, est: 1, units: [["scoop (20 g)", 20]] },  // label
-  { name: "Protein bar, typical", group: "Supplements", p: 30.3, units: [["bar", 60]] },  // SR28 25067
-  { name: "Nutritional yeast", group: "Supplements", p: 50, est: 1, units: [["tbsp", 5]] },  // label
+  { name: "Whey protein isolate powder", group: "Supplements", p: 85, k: 380, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Whey protein concentrate powder", group: "Supplements", p: 80, k: 400, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Casein protein powder", group: "Supplements", p: 75, k: 370, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Pea protein powder", group: "Supplements", p: 80, k: 380, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Soy protein isolate powder", group: "Supplements", p: 88.3, k: 335, units: [["scoop (30 g)", 30]] },  // SR28 16122
+  { name: "Collagen peptides", group: "Supplements", p: 90, k: 355, est: 1, units: [["scoop (20 g)", 20]] },  // label
+  { name: "Protein bar, typical", group: "Supplements", p: 30.3, k: 412, units: [["bar", 60]] },  // SR28 25067
+  { name: "Nutritional yeast", group: "Supplements", p: 50, k: 350, est: 1, units: [["tbsp", 5]] },  // label
   // ---- Plant protein ----
-  { name: "Tofu, firm", group: "Plant protein", p: 10.9, units: [["block (14 oz)", 396], ["1/2 cup", 126]] },  // SR28 16281
-  { name: "Tofu, silken", group: "Plant protein", p: 4.8, units: [["1/2 cup", 116]] },  // SR28 16278
-  { name: "Tempeh", group: "Plant protein", p: 20.3, units: [["1/2 cup", 83]] },  // SR28 16114
-  { name: "Seitan", group: "Plant protein", p: 21, est: 1, units: [] },  // label
-  { name: "Edamame, shelled, cooked", group: "Plant protein", p: 11.9, units: [["cup", 155]] },  // SR28 11212
-  { name: "Soybeans, cooked", group: "Plant protein", p: 18.2, units: [["cup", 172]] },  // SR28 16109
-  { name: "Lentils, cooked", group: "Plant protein", p: 9, units: [["cup", 198]] },  // SR28 16070
-  { name: "Lentils, dry", group: "Plant protein", p: 24.6, units: [["cup", 192]] },  // SR28 16069
-  { name: "Chickpeas, cooked", group: "Plant protein", p: 8.9, units: [["cup", 164]] },  // SR28 16057
-  { name: "Chickpeas, canned, drained", group: "Plant protein", p: 7, units: [["can, drained", 240]] },  // SR28 16358
-  { name: "Black beans, cooked", group: "Plant protein", p: 8.9, units: [["cup", 172]] },  // SR28 16015
-  { name: "Kidney beans, cooked", group: "Plant protein", p: 8.7, units: [["cup", 177]] },  // SR28 16033
-  { name: "Hummus, commercial", group: "Plant protein", p: 7.9, units: [["tbsp", 15]] },  // SR28 16158
-  { name: "Soy milk, plain, unfortified", group: "Plant protein", p: 3.3, units: [["cup", 243], ["ml", 1.03]] },  // SR28 16120
-  { name: "Oat milk", group: "Plant protein", p: 0.4, est: 1, units: [["cup", 240], ["ml", 1]] },  // label
-  { name: "Almond milk, unsweetened", group: "Plant protein", p: 0.6, units: [["cup", 240], ["ml", 1]] },  // SR28 14091
+  { name: "Tofu, firm", group: "Plant protein", p: 10.9, k: 85, units: [["block (14 oz)", 396], ["1/2 cup", 126]] },  // SR28 16281
+  { name: "Tofu, silken", group: "Plant protein", p: 4.8, k: 43, units: [["1/2 cup", 116]] },  // SR28 16278
+  { name: "Tempeh", group: "Plant protein", p: 20.3, k: 192, units: [["1/2 cup", 83]] },  // SR28 16114
+  { name: "Seitan", group: "Plant protein", p: 21, k: 130, est: 1, units: [] },  // label
+  { name: "Edamame, shelled, cooked", group: "Plant protein", p: 11.9, k: 121, units: [["cup", 155]] },  // SR28 11212
+  { name: "Soybeans, cooked", group: "Plant protein", p: 18.2, k: 172, units: [["cup", 172]] },  // SR28 16109
+  { name: "Lentils, cooked", group: "Plant protein", p: 9, k: 116, units: [["cup", 198]] },  // SR28 16070
+  { name: "Lentils, dry", group: "Plant protein", p: 24.6, k: 352, units: [["cup", 192]] },  // SR28 16069
+  { name: "Chickpeas, cooked", group: "Plant protein", p: 8.9, k: 164, units: [["cup", 164]] },  // SR28 16057
+  { name: "Chickpeas, canned, drained", group: "Plant protein", p: 7, k: 139, units: [["can, drained", 240]] },  // SR28 16358
+  { name: "Black beans, cooked", group: "Plant protein", p: 8.9, k: 132, units: [["cup", 172]] },  // SR28 16015
+  { name: "Kidney beans, cooked", group: "Plant protein", p: 8.7, k: 127, units: [["cup", 177]] },  // SR28 16033
+  { name: "Hummus, commercial", group: "Plant protein", p: 7.9, k: 166, units: [["tbsp", 15]] },  // SR28 16158
+  { name: "Soy milk, plain, unfortified", group: "Plant protein", p: 3.3, k: 54, units: [["cup", 243], ["ml", 1.03]] },  // SR28 16120
+  { name: "Oat milk", group: "Plant protein", p: 0.4, k: 48, est: 1, units: [["cup", 240], ["ml", 1]] },  // label
+  { name: "Almond milk, unsweetened", group: "Plant protein", p: 0.6, k: 15, units: [["cup", 240], ["ml", 1]] },  // SR28 14091
   // ---- Nuts & seeds ----
-  { name: "Peanut butter, smooth", group: "Nuts & seeds", p: 22.2, units: [["tbsp", 16]] },  // SR28 16098
-  { name: "Peanuts, dry-roasted", group: "Nuts & seeds", p: 24.4, units: [["handful (28 g)", 28]] },  // SR28 16390
-  { name: "Almonds", group: "Nuts & seeds", p: 21.1, units: [["handful (28 g)", 28], ["almond", 1.2]] },  // SR28 12061
-  { name: "Cashews, raw", group: "Nuts & seeds", p: 18.2, units: [["handful (28 g)", 28]] },  // SR28 12087
-  { name: "Walnuts", group: "Nuts & seeds", p: 15.2, units: [["handful (28 g)", 28]] },  // SR28 12155
-  { name: "Pistachios, raw", group: "Nuts & seeds", p: 20.2, units: [["handful (28 g)", 28]] },  // SR28 12151
-  { name: "Pumpkin seeds", group: "Nuts & seeds", p: 30.2, units: [["handful (28 g)", 28]] },  // SR28 12014
-  { name: "Sunflower seeds", group: "Nuts & seeds", p: 20.8, units: [["handful (28 g)", 28]] },  // SR28 12036
-  { name: "Chia seeds", group: "Nuts & seeds", p: 16.5, units: [["tbsp", 12]] },  // SR28 12006
-  { name: "Hemp seeds, hulled", group: "Nuts & seeds", p: 31.6, units: [["tbsp", 10]] },  // SR28 12012
-  { name: "Flaxseed, ground", group: "Nuts & seeds", p: 18.3, units: [["tbsp", 7]] },  // SR28 12220
+  { name: "Peanut butter, smooth", group: "Nuts & seeds", p: 22.2, k: 598, units: [["tbsp", 16]] },  // SR28 16098
+  { name: "Peanuts, dry-roasted", group: "Nuts & seeds", p: 24.4, k: 587, units: [["handful (28 g)", 28]] },  // SR28 16390
+  { name: "Almonds", group: "Nuts & seeds", p: 21.1, k: 579, units: [["handful (28 g)", 28], ["almond", 1.2]] },  // SR28 12061
+  { name: "Cashews, raw", group: "Nuts & seeds", p: 18.2, k: 553, units: [["handful (28 g)", 28]] },  // SR28 12087
+  { name: "Walnuts", group: "Nuts & seeds", p: 15.2, k: 654, units: [["handful (28 g)", 28]] },  // SR28 12155
+  { name: "Pistachios, raw", group: "Nuts & seeds", p: 20.2, k: 560, units: [["handful (28 g)", 28]] },  // SR28 12151
+  { name: "Pumpkin seeds", group: "Nuts & seeds", p: 30.2, k: 559, units: [["handful (28 g)", 28]] },  // SR28 12014
+  { name: "Sunflower seeds", group: "Nuts & seeds", p: 20.8, k: 584, units: [["handful (28 g)", 28]] },  // SR28 12036
+  { name: "Chia seeds", group: "Nuts & seeds", p: 16.5, k: 486, units: [["tbsp", 12]] },  // SR28 12006
+  { name: "Hemp seeds, hulled", group: "Nuts & seeds", p: 31.6, k: 553, units: [["tbsp", 10]] },  // SR28 12012
+  { name: "Flaxseed, ground", group: "Nuts & seeds", p: 18.3, k: 534, units: [["tbsp", 7]] },  // SR28 12220
   // ---- Grains & starches ----
-  { name: "Oats, rolled, dry", group: "Grains & starches", p: 13.2, units: [["1/2 cup (40 g)", 40]] },  // SR28 08120
-  { name: "Oatmeal, cooked with water", group: "Grains & starches", p: 2.5, units: [["cup", 234]] },  // SR28 08121
-  { name: "Bread, whole wheat", group: "Grains & starches", p: 12.4, units: [["slice", 32]] },  // SR28 18075
-  { name: "Bread, white", group: "Grains & starches", p: 8.8, units: [["slice", 29]] },  // SR28 18069
-  { name: "Tortilla, flour", group: "Grains & starches", p: 8.2, units: [["tortilla", 45]] },  // SR28 18364
-  { name: "Rice, white, long-grain, cooked", group: "Grains & starches", p: 2.7, units: [["cup", 158]] },  // SR28 20045
-  { name: "Rice, brown, long-grain, cooked", group: "Grains & starches", p: 2.7, units: [["cup", 195]] },  // SR28 20037
-  { name: "Pasta, cooked", group: "Grains & starches", p: 5.8, units: [["cup", 140]] },  // SR28 20121
-  { name: "Pasta, dry", group: "Grains & starches", p: 13, units: [["portion (80 g)", 80]] },  // SR28 20120
-  { name: "Quinoa, cooked", group: "Grains & starches", p: 4.4, units: [["cup", 185]] },  // SR28 20137
-  { name: "Couscous, cooked", group: "Grains & starches", p: 3.8, units: [["cup", 157]] },  // SR28 20029
-  { name: "Bulgur, cooked", group: "Grains & starches", p: 3.1, units: [["cup", 182]] },  // SR28 20013
-  { name: "Buckwheat groats, cooked", group: "Grains & starches", p: 3.4, units: [["cup", 168]] },  // SR28 20010
-  { name: "Potato, boiled in skin", group: "Grains & starches", p: 1.9, units: [["medium potato", 136], ["cup", 156]] },  // SR28 11365
-  { name: "Sweet potato, baked", group: "Grains & starches", p: 2, units: [["medium potato", 114], ["cup", 200]] },  // SR28 11508
-  { name: "Pizza, cheese, regular crust", group: "Grains & starches", p: 10.4, units: [["slice", 81]] },  // SR28 21224
+  { name: "Oats, rolled, dry", group: "Grains & starches", p: 13.2, k: 379, units: [["1/2 cup (40 g)", 40]] },  // SR28 08120
+  { name: "Oatmeal, cooked with water", group: "Grains & starches", p: 2.5, k: 71, units: [["cup", 234]] },  // SR28 08121
+  { name: "Bread, whole wheat", group: "Grains & starches", p: 12.4, k: 252, units: [["slice", 32]] },  // SR28 18075
+  { name: "Bread, white", group: "Grains & starches", p: 8.8, k: 266, units: [["slice", 29]] },  // SR28 18069
+  { name: "Tortilla, flour", group: "Grains & starches", p: 8.2, k: 306, units: [["tortilla", 45]] },  // SR28 18364
+  { name: "Rice, white, long-grain, cooked", group: "Grains & starches", p: 2.7, k: 130, units: [["cup", 158]] },  // SR28 20045
+  { name: "Rice, brown, long-grain, cooked", group: "Grains & starches", p: 2.7, k: 123, units: [["cup", 195]] },  // SR28 20037
+  { name: "Pasta, cooked", group: "Grains & starches", p: 5.8, k: 158, units: [["cup", 140]] },  // SR28 20121
+  { name: "Pasta, dry", group: "Grains & starches", p: 13, k: 371, units: [["portion (80 g)", 80]] },  // SR28 20120
+  { name: "Quinoa, cooked", group: "Grains & starches", p: 4.4, k: 120, units: [["cup", 185]] },  // SR28 20137
+  { name: "Couscous, cooked", group: "Grains & starches", p: 3.8, k: 112, units: [["cup", 157]] },  // SR28 20029
+  { name: "Bulgur, cooked", group: "Grains & starches", p: 3.1, k: 83, units: [["cup", 182]] },  // SR28 20013
+  { name: "Buckwheat groats, cooked", group: "Grains & starches", p: 3.4, k: 92, units: [["cup", 168]] },  // SR28 20010
+  { name: "Potato, boiled in skin", group: "Grains & starches", p: 1.9, k: 87, units: [["medium potato", 136], ["cup", 156]] },  // SR28 11365
+  { name: "Sweet potato, baked", group: "Grains & starches", p: 2, k: 90, units: [["medium potato", 114], ["cup", 200]] },  // SR28 11508
+  { name: "Pizza, cheese, regular crust", group: "Grains & starches", p: 10.4, k: 268, units: [["slice", 81]] },  // SR28 21224
   // ---- Vegetables & fruit ----
-  { name: "Broccoli, raw", group: "Vegetables & fruit", p: 2.8, units: [["cup, chopped", 91]] },  // SR28 11090
-  { name: "Spinach, raw", group: "Vegetables & fruit", p: 2.9, units: [["cup", 30]] },  // SR28 11457
-  { name: "Kale, raw", group: "Vegetables & fruit", p: 4.3, units: [["cup", 16]] },  // SR28 11233
-  { name: "Green peas, cooked", group: "Vegetables & fruit", p: 5.4, units: [["cup", 160]] },  // SR28 11305
-  { name: "Brussels sprouts, cooked", group: "Vegetables & fruit", p: 2.5, units: [["cup", 156]] },  // SR28 11099
-  { name: "Asparagus, cooked", group: "Vegetables & fruit", p: 2.4, units: [["spear", 15], ["cup", 180]] },  // SR28 11012
-  { name: "Mushrooms, white, raw", group: "Vegetables & fruit", p: 3.1, units: [["cup, sliced", 70]] },  // SR28 11260
-  { name: "Sweet corn, cooked", group: "Vegetables & fruit", p: 3.4, units: [["ear, medium", 103]] },  // SR28 11168
-  { name: "Avocado", group: "Vegetables & fruit", p: 2, units: [["medium avocado", 136]] },  // SR28 09038
-  { name: "Banana", group: "Vegetables & fruit", p: 1.1, units: [["medium banana", 118]] },  // SR28 09040
-  { name: "Apple, with skin", group: "Vegetables & fruit", p: 0.3, units: [["medium apple", 182]] },  // SR28 09003
-  { name: "Blueberries", group: "Vegetables & fruit", p: 0.7, units: [["cup", 148]] },  // SR28 09050
+  { name: "Broccoli, raw", group: "Vegetables & fruit", p: 2.8, k: 34, units: [["cup, chopped", 91]] },  // SR28 11090
+  { name: "Spinach, raw", group: "Vegetables & fruit", p: 2.9, k: 23, units: [["cup", 30]] },  // SR28 11457
+  { name: "Kale, raw", group: "Vegetables & fruit", p: 4.3, k: 49, units: [["cup", 16]] },  // SR28 11233
+  { name: "Green peas, cooked", group: "Vegetables & fruit", p: 5.4, k: 84, units: [["cup", 160]] },  // SR28 11305
+  { name: "Brussels sprouts, cooked", group: "Vegetables & fruit", p: 2.5, k: 36, units: [["cup", 156]] },  // SR28 11099
+  { name: "Asparagus, cooked", group: "Vegetables & fruit", p: 2.4, k: 22, units: [["spear", 15], ["cup", 180]] },  // SR28 11012
+  { name: "Mushrooms, white, raw", group: "Vegetables & fruit", p: 3.1, k: 22, units: [["cup, sliced", 70]] },  // SR28 11260
+  { name: "Sweet corn, cooked", group: "Vegetables & fruit", p: 3.4, k: 96, units: [["ear, medium", 103]] },  // SR28 11168
+  { name: "Avocado", group: "Vegetables & fruit", p: 2, k: 167, units: [["medium avocado", 136]] },  // SR28 09038
+  { name: "Banana", group: "Vegetables & fruit", p: 1.1, k: 89, units: [["medium banana", 118]] },  // SR28 09040
+  { name: "Apple, with skin", group: "Vegetables & fruit", p: 0.3, k: 52, units: [["medium apple", 182]] },  // SR28 09003
+  { name: "Blueberries", group: "Vegetables & fruit", p: 0.7, k: 57, units: [["cup", 148]] },  // SR28 09050
 ];
 
 /* ============================================================
@@ -445,6 +583,9 @@ let state = {
   customFoods: [],  // foods pulled in from USDA, same shape as FOODS entries
   target: null,
   apiKey: "",
+  pins: [],         // food names pinned to the top of the browse table
+  sort: "p",        // browse sort column: name | p | pp | k | pk
+  dir: -1,          // 1 ascending, -1 descending
 };
 
 let seq = 0;
@@ -459,6 +600,9 @@ function load() {
     if (Array.isArray(saved.customFoods)) state.customFoods = saved.customFoods;
     if (typeof saved.target === "number") state.target = saved.target;
     if (typeof saved.apiKey === "string") state.apiKey = saved.apiKey;
+    if (Array.isArray(saved.pins)) state.pins = saved.pins.filter(n => typeof n === "string");
+    if (typeof saved.sort === "string") state.sort = saved.sort;
+    if (saved.dir === 1 || saved.dir === -1) state.dir = saved.dir;
     // keep generated keys unique against restored ones
     for (const e of state.entries) {
       const n = parseInt(String(e.key).slice(1), 10);
@@ -659,13 +803,17 @@ searchEl.addEventListener("keydown", ev => {
   }
 });
 
-function addFood(food) {
+/** opts.stay keeps the caller's context (used by the browse view's + button,
+    where clearing and refocusing the calculator's search box would be wrong). */
+function addFood(food, opts = {}) {
   const { qty, unit } = defaultPortion(food);
   state.entries.push({ key: nextKey(), food, qty, unit });
-  searchEl.value = "";
-  matches = [];
-  closeResults();
-  searchEl.focus();
+  if (!opts.stay) {
+    searchEl.value = "";
+    matches = [];
+    closeResults();
+    searchEl.focus();
+  }
   render();
 }
 
@@ -795,6 +943,11 @@ function renderTotals() {
   savedNote.textContent = state.entries.length
     ? `${state.entries.length} item${state.entries.length === 1 ? "" : "s"} · saved in this browser`
     : "";
+
+  // so adding from the browse view gives visible feedback on the other tab
+  const badge = $("tab-count");
+  badge.hidden = !state.entries.length;
+  badge.textContent = String(state.entries.length);
 }
 
 function render() {
@@ -962,11 +1115,246 @@ function titleish(s) {
 }
 
 /* ============================================================
+   BROWSE VIEW
+
+   A reference table over the whole database. Three measures, because no
+   single one tells you much on its own:
+
+     protein /100 g      — density, the number everyone quotes
+     protein /portion    — what you actually get from one realistic serving
+     protein /100 kcal   — how much protein the food carries per calorie
+
+   Only ONE column shows bars: whichever you sorted by. That keeps the bar
+   scale unambiguous (three side-by-side scales would invite comparing
+   lengths across different units) and makes the ranking legible at a glance.
+   ============================================================ */
+const COLS = {
+  name: { label: "name",             get: f => f.name, text: true },
+  p:    { label: "protein /100 g",   get: f => f.p },
+  pp:   { label: "protein /portion", get: f => portionOf(f).protein },
+  k:    { label: "energy /100 g",    get: f => f.k },
+  pk:   { label: "protein /100 kcal",get: f => f.k > 0 ? f.p / f.k * 100 : 0 },
+};
+
+/** The portion a browse row is described by: first household unit, else 100 g. */
+function portionOf(food) {
+  const named = unitsFor(food).slice(BASE_UNITS.length);
+  const u = named.length ? named[0] : { name: "g", grams: 100 };
+  const grams = named.length ? u.grams : 100;
+  return {
+    grams,
+    label: named.length ? `1 ${u.name} · ${fmtG(grams)} g` : "100 g",
+    protein: grams * food.p / 100,
+  };
+}
+
+const browseEls = {
+  rows: $("b-rows"), q: $("b-q"), group: $("b-group"),
+  count: $("b-count"), legend: $("b-legend"),
+};
+
+const isPinned = name => state.pins.includes(name);
+
+function browseRowsFor() {
+  const q = browseEls.q.value.trim().toLowerCase();
+  const grp = browseEls.group.value;
+  const col = COLS[state.sort] || COLS.p;
+
+  const matches = f =>
+    (!grp || f.group === grp) &&
+    (!q || (f.name + " " + f.group).toLowerCase().includes(q));
+
+  const cmp = (a, b) => {
+    const av = col.get(a), bv = col.get(b);
+    const d = col.text ? String(av).localeCompare(String(bv)) : av - bv;
+    return d * state.dir || a.name.localeCompare(b.name);
+  };
+
+  // Pinned rows ignore the filter on purpose: they are the comparison anchors
+  // you keep in view while you sort and filter everything else.
+  const pinned = allFoods().filter(f => isPinned(f.name)).sort(cmp);
+  const rest = allFoods().filter(f => !isPinned(f.name) && matches(f)).sort(cmp);
+  return { pinned, rest, col };
+}
+
+function renderBrowse() {
+  const { pinned, rest, col } = browseRowsFor();
+  const tb = browseEls.rows;
+  tb.textContent = "";
+
+  // Bars are scaled to the largest value on screen, so the longest bar is full.
+  const shown = [...pinned, ...rest];
+  const max = col.text ? 0 : Math.max(0, ...shown.map(f => col.get(f)));
+
+  if (!shown.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 8; td.className = "empty"; td.style.textAlign = "center";
+    td.textContent = "No food matches that filter.";
+    tr.append(td); tb.append(tr);
+  }
+
+  pinned.forEach(f => tb.append(browseRow(f, col, max, true)));
+  if (pinned.length && rest.length) {
+    const sep = document.createElement("tr");
+    sep.className = "pin-sep";
+    const td = document.createElement("td");
+    td.colSpan = 8;
+    sep.append(td);
+    tb.append(sep);
+  }
+  rest.forEach(f => tb.append(browseRow(f, col, max, false)));
+
+  // Header sort indicators
+  document.querySelectorAll("table.browse th").forEach(th => {
+    const btn = th.querySelector(".sorth");
+    if (!btn) return;
+    if (btn.dataset.sort === state.sort)
+      th.setAttribute("aria-sort", state.dir === 1 ? "ascending" : "descending");
+    else th.removeAttribute("aria-sort");
+  });
+
+  const n = rest.length + pinned.length;
+  browseEls.count.textContent =
+    `${n} food${n === 1 ? "" : "s"}${pinned.length ? ` · ${pinned.length} pinned` : ""}`;
+  browseEls.legend.textContent = col.text
+    ? "Sorted by name. Sort by a number to see comparison bars."
+    : `Bars show ${col.label}, relative to the largest value shown.`;
+}
+
+function browseRow(food, col, max, pinnedRow) {
+  const tr = document.createElement("tr");
+  if (pinnedRow) tr.className = "pinned";
+  const portion = portionOf(food);
+
+  // pin toggle
+  const tdPin = document.createElement("td");
+  const pin = document.createElement("button");
+  pin.className = "pin-btn";
+  pin.textContent = pinnedRow ? "★" : "☆";
+  pin.setAttribute("aria-pressed", String(pinnedRow));
+  pin.setAttribute("aria-label", (pinnedRow ? "Unpin " : "Pin ") + food.name);
+  pin.title = pinnedRow ? "Unpin" : "Pin to top";
+  pin.addEventListener("click", () => {
+    state.pins = pinnedRow ? state.pins.filter(n => n !== food.name)
+                           : [...state.pins, food.name];
+    save();
+    renderBrowse();
+  });
+  tdPin.append(pin);
+
+  // name + group
+  const tdName = document.createElement("td");
+  const nm = document.createElement("div");
+  nm.className = "bname";
+  nm.textContent = food.name;
+  if (food.est) {
+    const e = document.createElement("span");
+    e.className = "est";
+    e.textContent = "  ≈";
+    e.title = "No USDA record — value from product labels, varies by brand";
+    nm.append(e);
+  }
+  const gp = document.createElement("div");
+  gp.className = "bgrp";
+  gp.textContent = food.group + (food.brand ? " · " + food.brand : "");
+  tdName.append(nm, gp);
+
+  const cell = (key, text, dim) => {
+    const td = document.createElement("td");
+    td.className = "num val" + (dim ? " dim" : "");
+    if (key === state.sort && max > 0) {
+      const wrap = document.createElement("div");
+      wrap.className = "mbar";
+      const label = document.createElement("span");
+      label.textContent = text;
+      const track = document.createElement("div");
+      track.className = "mbar-track";
+      const fill = document.createElement("div");
+      fill.className = "mbar-fill";
+      fill.style.width = Math.max(0, COLS[key].get(food) / max * 100) + "%";
+      track.append(fill);
+      wrap.append(label, track);
+      td.append(wrap);
+    } else {
+      td.textContent = text;
+    }
+    return td;
+  };
+
+  const tdPortion = document.createElement("td");
+  tdPortion.className = "portion-col";
+  tdPortion.textContent = portion.label;
+
+  // add to calculator
+  const tdAct = document.createElement("td");
+  tdAct.className = "col-act";
+  const add = document.createElement("button");
+  add.className = "add-btn";
+  add.textContent = "+";
+  add.title = "Add to calculator";
+  add.setAttribute("aria-label", "Add " + food.name + " to the calculator");
+  add.addEventListener("click", () => {
+    addFood(food, { stay: true });
+    add.textContent = "✓";
+    setTimeout(() => { add.textContent = "+"; }, 900);
+  });
+  tdAct.append(add);
+
+  tr.append(
+    tdPin, tdName,
+    cell("p", fmt(food.p) + " g"),
+    tdPortion,
+    cell("pp", fmt(portion.protein) + " g"),
+    cell("k", String(Math.round(food.k)), true),
+    cell("pk", fmt(COLS.pk.get(food)) + " g"),
+    tdAct,
+  );
+  return tr;
+}
+
+// group filter options
+for (const g of [...new Set(FOODS.map(f => f.group))]) {
+  const opt = document.createElement("option");
+  opt.value = opt.textContent = g;
+  browseEls.group.append(opt);
+}
+
+browseEls.q.addEventListener("input", renderBrowse);
+browseEls.group.addEventListener("change", renderBrowse);
+
+document.querySelectorAll("button.sorth").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.sort;
+    if (state.sort === key) state.dir = -state.dir;
+    else { state.sort = key; state.dir = key === "name" ? 1 : -1; }  // numbers start high-to-low
+    save();
+    renderBrowse();
+  });
+});
+
+/* ---------- view switching ---------- */
+function showView(which) {
+  const calc = which === "calc";
+  $("view-calc").hidden = !calc;
+  $("view-browse").hidden = calc;
+  $("tab-calc").classList.toggle("active", calc);
+  $("tab-browse").classList.toggle("active", !calc);
+  $("tab-calc").setAttribute("aria-selected", String(calc));
+  $("tab-browse").setAttribute("aria-selected", String(!calc));
+  if (calc) searchEl.focus();
+  else { renderBrowse(); browseEls.q.focus(); }
+}
+$("tab-calc").addEventListener("click", () => showView("calc"));
+$("tab-browse").addEventListener("click", () => showView("browse"));
+
+/* ============================================================
    BOOT
    ============================================================ */
 load();
 if (state.target) targetEl.value = String(state.target);
 render();
+renderBrowse();
 searchEl.focus();
 </script>
 </body>

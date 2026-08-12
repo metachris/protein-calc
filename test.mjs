@@ -197,5 +197,134 @@ check("USDA-sourced row has no ≈ marker",
   !$("results").querySelector(".result .val").textContent.startsWith("≈"),
   $("results").querySelector(".result .val").textContent);
 
+
+// ============================================================
+// BROWSE VIEW
+// ============================================================
+const brows = () => [...$("b-rows").querySelectorAll("tr")].filter(r => !r.querySelector("td.empty") && !r.classList.contains("pin-sep"));
+const bcells = tr => [...tr.querySelectorAll("td")].map(td => td.textContent.trim());
+const bnames = () => brows().map(r => r.querySelector(".bname").textContent.replace(/\s*≈$/, "").trim());
+const header = key => doc.querySelector(`button.sorth[data-sort="${key}"]`);
+const sortBy = key => click(header(key));
+
+check("browse view starts hidden", $("view-browse").hidden && !$("view-calc").hidden);
+click($("tab-browse"));
+check("tab switches to browse", !$("view-browse").hidden && $("view-calc").hidden);
+check("tabs report selection to a11y tree",
+  $("tab-browse").getAttribute("aria-selected") === "true" && $("tab-calc").getAttribute("aria-selected") === "false");
+check("browse lists every built-in food plus imported ones", brows().length === 131, `${brows().length}`);
+check("browse includes USDA-imported custom foods",
+  bnames().some(n => n.startsWith("Greek Yogurt, Plain")));
+
+// --- default sort: protein per 100 g, descending ---
+check("defaults to protein/100 g descending",
+  header("p").closest("th").getAttribute("aria-sort") === "descending");
+const p100 = brows().map(r => parseFloat(bcells(r)[2]));
+check("protein/100 g column is sorted descending",
+  p100.every((v, i) => i === 0 || p100[i-1] >= v), p100.slice(0,4).join(" "));
+check("collagen tops protein/100 g", bnames()[0] === "Collagen peptides", bnames().slice(0,3).join(" | "));
+
+// --- exactly one bar column, and it follows the sort ---
+const barCols = tr => [...tr.querySelectorAll("td")].map(td => !!td.querySelector(".mbar-fill"));
+check("exactly one column carries bars", barCols(brows()[0]).filter(Boolean).length === 1,
+  barCols(brows()[0]).map(b => b ? "bar" : "-").join(","));
+check("bar sits in the sorted column (protein/100 g)", barCols(brows()[0])[2] === true);
+check("largest value gets a full-width bar",
+  brows()[0].querySelector(".mbar-fill").style.width === "100%",
+  brows()[0].querySelector(".mbar-fill").style.width);
+
+sortBy("pk");
+check("bar moves to protein/100 kcal when sorted there", barCols(brows()[0])[6] === true &&
+  barCols(brows()[0]).filter(Boolean).length === 1);
+const perKcal = brows().map(r => parseFloat(bcells(r)[6]));
+check("protein/100 kcal sorted descending", perKcal.every((v,i) => i === 0 || perKcal[i-1] >= v));
+check("per-calorie ranking is the educational one (egg white beats almonds)",
+  bnames().indexOf("Egg white, raw") < bnames().indexOf("Almonds"),
+  `egg white #${bnames().indexOf("Egg white, raw")+1}, almonds #${bnames().indexOf("Almonds")+1}`);
+
+// --- sort direction toggles, name sort has no bars ---
+sortBy("pk");
+check("clicking the same header flips direction",
+  header("pk").closest("th").getAttribute("aria-sort") === "ascending");
+sortBy("name");
+check("name sort is alphabetical ascending", bnames()[0] < bnames()[1] && bnames()[0] === "Almond milk, unsweetened", bnames()[0]);
+check("no bars when sorting by name", barCols(brows()[0]).filter(Boolean).length === 0);
+check("legend explains how to get bars", /Sort by a number/.test($("b-legend").textContent), $("b-legend").textContent);
+
+// --- portion column ---
+sortBy("pp");
+const eggRow = brows().find(r => r.querySelector(".bname").textContent.startsWith("Egg, whole"));
+check("portion column states the assumption", bcells(eggRow)[3] === "1 large egg · 50 g", bcells(eggRow)[3]);
+check("protein per portion computed from it", bcells(eggRow)[4] === "6.3 g", bcells(eggRow)[4]);
+const steakRow = brows().find(r => r.querySelector(".bname").textContent.startsWith("Beef steak, lean (sirloin), raw"));
+check("unit-less food falls back to 100 g", bcells(steakRow)[3] === "100 g" && bcells(steakRow)[4] === "21.9 g",
+  `${bcells(steakRow)[3]} / ${bcells(steakRow)[4]}`);
+
+// --- filtering ---
+type($("b-q"), "cheese");
+check("text filter narrows the table", brows().length > 3 && brows().length < 20, `${brows().length} rows`);
+check("filter count is reported", /food/.test($("b-count").textContent), $("b-count").textContent);
+type($("b-q"), "zzzznope");
+check("empty filter state shown", $("b-rows").textContent.includes("No food matches"));
+type($("b-q"), "");
+$("b-group").value = "Fish & seafood";
+$("b-group").dispatchEvent(new window.Event("change", { bubbles: true }));
+check("group filter works", brows().every(r => r.querySelector(".bgrp").textContent.startsWith("Fish & seafood")),
+  `${brows().length} rows`);
+
+// --- pinning: the anchor behaviour ---
+const pinRow = name => {
+  const r = brows().find(x => x.querySelector(".bname").textContent.startsWith(name));
+  click(r.querySelector(".pin-btn"));
+};
+pinRow("Cod, raw");
+check("pinned row is marked", brows()[0].classList.contains("pinned") &&
+  brows()[0].querySelector(".bname").textContent.startsWith("Cod, raw"));
+check("pin button reports pressed state", brows()[0].querySelector(".pin-btn").getAttribute("aria-pressed") === "true");
+$("b-group").value = "Nuts & seeds";
+$("b-group").dispatchEvent(new window.Event("change", { bubbles: true }));
+check("pinned food survives a filter that excludes it",
+  bnames()[0] === "Cod, raw" && brows().length > 1, bnames().slice(0,3).join(" | "));
+check("separator divides pins from the rest",
+  !!$("b-rows").querySelector("tr.pin-sep"));
+type($("b-q"), "zzzznope");
+check("pins remain visible even with no other matches", bnames().length === 1 && bnames()[0] === "Cod, raw");
+type($("b-q"), "");
+check("pin count surfaced", /1 pinned/.test($("b-count").textContent), $("b-count").textContent);
+check("pins persisted to localStorage",
+  JSON.parse(window.localStorage.getItem("protein-calc.v1")).pins.includes("Cod, raw"));
+// unpin
+click(brows()[0].querySelector(".pin-btn"));
+check("unpinning removes the anchor", bnames()[0] !== "Cod, raw" &&
+  !JSON.parse(window.localStorage.getItem("protein-calc.v1")).pins.includes("Cod, raw"));
+$("b-group").value = "";
+$("b-group").dispatchEvent(new window.Event("change", { bubbles: true }));
+
+// --- add to calculator from browse ---
+const before = rows().length;
+const target = brows().find(r => r.querySelector(".bname").textContent.startsWith("Tempeh"));
+click(target.querySelector(".add-btn"));
+check("+ adds the food to the calculator", rows().length === before + 1);
+check("stays on the browse tab after adding", !$("view-browse").hidden, "browse still visible");
+check("tab badge counts calculator items", $("tab-count").textContent === String(before + 1) && !$("tab-count").hidden,
+  $("tab-count").textContent);
+check("added row uses the food's default portion",
+  rows().at(-1).querySelector("select").value === "1/2 cup",
+  rows().at(-1).querySelector("select").value);
+
+// --- sort choice persists ---
+sortBy("k");
+const stored2 = JSON.parse(window.localStorage.getItem("protein-calc.v1"));
+check("sort column and direction persisted", stored2.sort === "k" && stored2.dir === -1,
+  `${stored2.sort} ${stored2.dir}`);
+
+// --- energy data integrity ---
+let kbad = [];
+for (const f of FOODS) {
+  if (!(f.k >= 0 && f.k <= 900)) kbad.push(`${f.name}: k=${f.k}`);
+  if (f.p * 4 > f.k * 1.15 + 1) kbad.push(`${f.name}: ${f.p}g protein needs ${(f.p*4).toFixed(0)} kcal but k=${f.k}`);
+}
+check("every food has plausible energy data", kbad.length === 0, kbad.slice(0,3).join("; "));
+
 console.log("\n" + (fail ? fail + " FAILURE(S)" : "all checks passed"));
 process.exit(fail ? 1 : 0);
