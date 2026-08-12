@@ -326,5 +326,123 @@ for (const f of FOODS) {
 }
 check("every food has plausible energy data", kbad.length === 0, kbad.slice(0,3).join("; "));
 
+
+// ============================================================
+// MULTILINGUAL SEARCH
+// ============================================================
+click($("tab-calc"));
+const find = q => { type($("search"), q); return [...$("results").querySelectorAll(".result")]; };
+const firstName = q => { const r = find(q); return r.length ? r[0].querySelector(".name .nm").textContent.trim() : null; };
+const firstAlias = q => { const r = find(q); const a = r.length ? r[0].querySelector(".alias") : null; return a ? a.textContent.replace(/^└\s*/, "") : null; };
+
+// --- German ---
+check("DE: Hähnchenbrust finds chicken breast", firstName("Hähnchenbrust").startsWith("Chicken breast"), firstName("Hähnchenbrust"));
+check("DE: without umlaut — hahnchenbrust", firstName("hahnchenbrust").startsWith("Chicken breast"), firstName("hahnchenbrust"));
+check("DE: umlaut spelled out — haehnchenbrust", firstName("haehnchenbrust").startsWith("Chicken breast"), firstName("haehnchenbrust"));
+check("DE: Käse finds cheeses", find("Käse").length >= 5, `${find("Käse").length} results`);
+check("DE: kase (no umlaut) finds the same", find("kase").length === find("Käse").length);
+// "kaese" finds one fewer than "Käse": folding ä->a makes "kase" a substring of
+// "Kasein" (casein powder). A tolerable false positive from accent-insensitivity.
+const cheeseBy = q => find(q).map(r => r.querySelector(".name .nm").textContent.trim()).filter(n => /Cheese|Cheddar|Gouda|Feta|Mozzarella|Parmesan|Halloumi|Quark/i.test(n));
+check("DE: all three spellings of Käse find the same cheeses",
+  JSON.stringify(cheeseBy("Käse")) === JSON.stringify(cheeseBy("kase")) &&
+  JSON.stringify(cheeseBy("Käse")) === JSON.stringify(cheeseBy("kaese")),
+  `${cheeseBy("Käse").length} cheeses`);
+check("DE: folding is why Kasein also answers to 'kase'",
+  find("Käse").length === find("kaese").length + 1);
+check("DE: ß folds to ss — Eiweißpulver", firstName("Eiweißpulver") !== null && /protein/i.test(firstName("Eiweißpulver")), firstName("Eiweißpulver"));
+check("DE: eiweisspulver finds it too", firstName("eiweisspulver") === firstName("Eiweißpulver"));
+check("DE: compound part — Brust matches Hähnchenbrust", find("brust").some(r => r.textContent.includes("Chicken breast")));
+check("DE: Rinderleber finds beef liver", firstName("Rinderleber").startsWith("Beef liver"), firstName("Rinderleber"));
+check("DE: Magerquark finds quark", firstName("Magerquark").startsWith("Quark"), firstName("Magerquark"));
+check("DE: Kürbiskerne finds pumpkin seeds", firstName("Kürbiskerne") === "Pumpkin seeds", firstName("Kürbiskerne"));
+check("DE: Süßkartoffel finds sweet potato", firstName("Süßkartoffel").startsWith("Sweet potato"), firstName("Süßkartoffel"));
+check("DE: suesskartoffel too", firstName("suesskartoffel").startsWith("Sweet potato"), firstName("suesskartoffel"));
+
+// --- Polish ---
+check("PL: kurczak finds chicken", find("kurczak").some(r => r.textContent.includes("Chicken")), `${find("kurczak").length} results`);
+check("PL: łosoś finds salmon", firstName("łosoś").startsWith("Salmon"), firstName("łosoś"));
+check("PL: losos without diacritics finds salmon", firstName("losos").startsWith("Salmon"), firstName("losos"));
+check("PL: ł folds to l — losos == łosoś", find("losos").length === find("łosoś").length);
+check("PL: wątróbka finds beef liver", firstName("wątróbka").startsWith("Beef liver"), firstName("wątróbka"));
+check("PL: watrobka undiacriticked finds it", firstName("watrobka").startsWith("Beef liver"), firstName("watrobka"));
+check("PL: jajko finds egg", firstName("jajko").startsWith("Egg"), firstName("jajko"));
+check("PL: jajka (inflected) also finds egg", firstName("jajka").startsWith("Egg"), firstName("jajka"));
+check("PL: twaróg finds quark", firstName("twaróg").startsWith("Quark"), firstName("twaróg"));
+check("PL: twarog undiacriticked finds quark", firstName("twarog").startsWith("Quark"), firstName("twarog"));
+check("PL: ziemniaki finds potato", firstName("ziemniaki").startsWith("Potato"), firstName("ziemniaki"));
+check("PL: kasza gryczana finds buckwheat", firstName("kasza gryczana").startsWith("Buckwheat"), firstName("kasza gryczana"));
+check("PL: soczewica finds lentils", firstName("soczewica").startsWith("Lentils"), firstName("soczewica"));
+check("PL: pestki dyni finds pumpkin seeds", firstName("pestki dyni") === "Pumpkin seeds", firstName("pestki dyni"));
+
+// --- the matched name is shown back to the user ---
+check("matched German name is displayed", firstAlias("Hähnchenbrust") === "Hähnchenbrust, roh", firstAlias("Hähnchenbrust"));
+check("matched Polish name is displayed", firstAlias("łosoś") === "Łosoś atlantycki, hodowlany, surowy", firstAlias("łosoś"));
+check("no alias shown for an English match", firstAlias("chicken breast") === null, String(firstAlias("chicken breast")));
+check("alias shown even when typed without diacritics", firstAlias("watrobka") === "Wątróbka wołowa, gotowana", firstAlias("watrobka"));
+
+// --- English behaviour is unchanged ---
+check("EN: exact-name ranking still holds (Almonds > Almond milk)", firstName("almond") === "Almonds", firstName("almond"));
+check("EN: egg still ranks whole egg first", firstName("egg") === "Egg, whole, raw", firstName("egg"));
+check("EN: steak still finds beef before tuna", firstName("steak").startsWith("Beef steak"), firstName("steak"));
+
+// --- adding a food found by its German name works end to end ---
+const nBefore = rows().length;
+find("Kürbiskerne");
+mousedown($("results").querySelector(".result"));
+check("can add a food found in German", rows().length === nBefore + 1 &&
+  cells(rows().at(-1))[0].includes("Pumpkin seeds"), cells(rows().at(-1))[0].slice(0, 40));
+
+// --- browse filter speaks the same languages ---
+click($("tab-browse"));
+type($("b-q"), "");
+type($("b-q"), "kurczak");
+check("browse filter matches Polish", brows().length >= 3 && brows().every(r => /Chicken/.test(r.textContent)),
+  `${brows().length} rows`);
+check("browse shows the matched foreign name", /kurczak/i.test(brows()[0].querySelector(".bgrp").textContent),
+  brows()[0].querySelector(".bgrp").textContent);
+type($("b-q"), "");
+
+// --- translation data integrity ---
+const trbad = [];
+for (const f of FOODS) {
+  if (!Array.isArray(f.de) || !f.de.length || !f.de[0].trim()) trbad.push(`${f.name}: missing de`);
+  if (!Array.isArray(f.pl) || !f.pl.length || !f.pl[0].trim()) trbad.push(`${f.name}: missing pl`);
+  if ((f.de || []).some(x => !x.trim()) || (f.pl || []).some(x => !x.trim())) trbad.push(`${f.name}: blank alias`);
+  for (const arr of [f.de || [], f.pl || []])
+    if (new Set(arr.map(x => x.toLowerCase())).size !== arr.length) trbad.push(`${f.name}: duplicate alias`);
+}
+check("every food has German and Polish names", trbad.length === 0, trbad.slice(0,3).join("; "));
+// no two foods should be reachable ONLY by an identical primary translation
+const dePrim = FOODS.map(f => f.de[0]), plPrim = FOODS.map(f => f.pl[0]);
+check("primary German names are distinct", new Set(dePrim).size === dePrim.length,
+  dePrim.filter((n,i,a) => a.indexOf(n) !== i).join(", "));
+check("primary Polish names are distinct", new Set(plPrim).size === plPrim.length,
+  plPrim.filter((n,i,a) => a.indexOf(n) !== i).join(", "));
+
+// every food must be findable by its own primary translations
+const unfindable = [];
+for (const f of FOODS) {
+  for (const label of [f.de[0], f.pl[0]]) {
+    if (!window.searchFoods(label).some(x => x.name === f.name)) unfindable.push(`${f.name} by "${label}"`);
+  }
+}
+check("every food is findable by its own DE and PL name", unfindable.length === 0, unfindable.slice(0,3).join("; "));
+
+
+// --- translations.tsv is the review copy; it must not drift from the app ---
+const tsv = fs.readFileSync(new URL("translations.tsv", import.meta.url), "utf8").trim().split("\n");
+const tsvRows = tsv.slice(1).map(l => l.split("\t"));
+check("translations.tsv covers every food", tsvRows.length === FOODS.length, `${tsvRows.length} vs ${FOODS.length}`);
+const tsvDrift = [];
+FOODS.forEach((f, i) => {
+  const [en, de, deAlt, pl, plAlt] = tsvRows[i] || [];
+  if (en !== f.name) tsvDrift.push(`row ${i+1}: ${en} != ${f.name}`);
+  else if (de !== f.de[0] || (deAlt || "") !== f.de.slice(1).join("; ") ||
+           pl !== f.pl[0] || (plAlt || "") !== f.pl.slice(1).join("; "))
+    tsvDrift.push(`${f.name}: tsv and index.html disagree`);
+});
+check("translations.tsv matches index.html", tsvDrift.length === 0, tsvDrift.slice(0,3).join("; "));
+
 console.log("\n" + (fail ? fail + " FAILURE(S)" : "all checks passed"));
 process.exit(fail ? 1 : 0);

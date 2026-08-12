@@ -118,6 +118,9 @@
   .result .name { flex: 1; min-width: 0; }
   .result .name b { font-weight: 600; }
   .result .brand { color: var(--text-faint); font-size: 12.5px; }
+  .result .alias { color: var(--text-dim); font-size: 12.5px; margin-top: 1px; }
+  .result { align-items: flex-start; }
+  .result .val, .result .grp { padding-top: 1px; }
   .result .grp { color: var(--text-faint); font-size: 12px; }
   .result .val { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; font-size: 13.5px; white-space: nowrap; }
   .result .val span { color: var(--text-faint); font-weight: 400; }
@@ -266,7 +269,7 @@
     <label class="field" for="search">Add a food</label>
     <div class="search-wrap">
       <input type="search" id="search" autocomplete="off" spellcheck="false"
-             placeholder="Search eggs, steak, greek yogurt, lentils…"
+             placeholder="Search in English, German or Polish — eggs, Hähnchenbrust, twaróg…"
              role="combobox" aria-expanded="false" aria-controls="results" aria-autocomplete="list">
       <div class="results" id="results" role="listbox" hidden></div>
     </div>
@@ -350,7 +353,7 @@
 <div id="view-browse" role="tabpanel" aria-labelledby="tab-browse" hidden>
 
   <div class="filters">
-    <input type="search" id="b-q" placeholder="Filter foods…" autocomplete="off" aria-label="Filter foods by name">
+    <input type="search" id="b-q" placeholder="Filter foods (EN / DE / PL)…" autocomplete="off" aria-label="Filter foods by name">
     <select id="b-group" aria-label="Filter by food group"><option value="">All groups</option></select>
     <div class="spacer"></div>
     <span class="hint" id="b-count" style="margin:0"></span>
@@ -398,7 +401,11 @@
     NDB&nbsp;id in a comment so it can be re-checked. The 11 marked&nbsp;≈ have no USDA entry and
     come from product labels — check your own tub, especially for protein powders.<br>
     Raw vs.&nbsp;cooked matters: cooked meat lost water, so it is denser in protein.
-    Weigh your food the same way the row is labelled.
+    Weigh your food the same way the row is labelled.<br>
+    Foods can be searched in English, German or Polish, with or without accents —
+    <em>kase</em> finds Käse, <em>losos</em> finds łosoś. The German and Polish names are
+    hand-written rather than taken from a database; they are listed in
+    <code>translations.tsv</code> and corrections there are welcome.
   </p>
 </div>
 
@@ -411,6 +418,12 @@
    p     = grams of protein per 100 g of the food.
    k     = kilocalories per 100 g (USDA nutrient 208), used only by the
            browse view to rank foods by protein per calorie.
+   de/pl = German and Polish names for searching. The first entry is the
+           display name; the rest are search-only aliases covering plurals,
+           inflections and the parts of German compounds people actually type.
+           UNLIKE the protein figures these are not sourced from a database —
+           they are hand-written, listed in translations.tsv for review, and
+           should be corrected by a native speaker where they read wrong.
    units = household portions, each expressed in grams.
            "g" and "oz" are added to every food automatically,
            and all arithmetic converts to grams first.
@@ -433,143 +446,143 @@
    ============================================================ */
 const FOODS = [
   // ---- Eggs & dairy ----
-  { name: "Egg, whole, raw", group: "Eggs & dairy", p: 12.6, k: 143, units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },  // SR28 01123
-  { name: "Egg white, raw", group: "Eggs & dairy", p: 10.9, k: 52, units: [["large egg white", 33]] },  // SR28 01124
-  { name: "Egg yolk, raw", group: "Eggs & dairy", p: 15.9, k: 322, units: [["large yolk", 17]] },  // SR28 01125
-  { name: "Milk, whole (3.25%)", group: "Eggs & dairy", p: 3.1, k: 61, units: [["cup", 244], ["ml", 1.03]] },  // SR28 01211
-  { name: "Milk, skim", group: "Eggs & dairy", p: 3.4, k: 34, units: [["cup", 245], ["ml", 1.03]] },  // SR28 01085
-  { name: "Greek yogurt, plain, nonfat", group: "Eggs & dairy", p: 10.2, k: 59, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01256
-  { name: "Greek yogurt, plain, whole", group: "Eggs & dairy", p: 9, k: 97, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01293
-  { name: "Skyr, plain", group: "Eggs & dairy", p: 11, k: 60, est: 1, units: [["150 g tub", 150]] },  // label
-  { name: "Yogurt, plain, whole milk", group: "Eggs & dairy", p: 3.5, k: 61, units: [["cup", 245]] },  // SR28 01116
-  { name: "Kefir, plain, lowfat", group: "Eggs & dairy", p: 3.8, k: 41, units: [["cup", 243], ["ml", 1.03]] },  // SR28 01289
-  { name: "Cottage cheese, 2%", group: "Eggs & dairy", p: 10.4, k: 81, units: [["cup", 226]] },  // SR28 01015
-  { name: "Cottage cheese, 4%", group: "Eggs & dairy", p: 11.1, k: 98, units: [["cup", 226]] },  // SR28 01012
-  { name: "Quark, plain, low fat", group: "Eggs & dairy", p: 12, k: 67, est: 1, units: [["250 g tub", 250]] },  // label
-  { name: "Ricotta, part skim", group: "Eggs & dairy", p: 11.4, k: 138, units: [["cup", 246]] },  // SR28 01037
-  { name: "Cheddar cheese", group: "Eggs & dairy", p: 22.9, k: 404, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01009
-  { name: "Mozzarella, part skim", group: "Eggs & dairy", p: 24.3, k: 254, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01028
-  { name: "Mozzarella, whole milk", group: "Eggs & dairy", p: 22.2, k: 300, units: [["slice", 28], ["cup, shredded", 112]] },  // SR28 01026
-  { name: "Parmesan, hard", group: "Eggs & dairy", p: 35.8, k: 392, units: [["tbsp, grated", 5]] },  // SR28 01033
-  { name: "Swiss cheese", group: "Eggs & dairy", p: 27, k: 393, units: [["slice", 28]] },  // SR28 01040
-  { name: "Gouda cheese", group: "Eggs & dairy", p: 24.9, k: 356, units: [["slice", 28]] },  // SR28 01022
-  { name: "Feta cheese", group: "Eggs & dairy", p: 14.2, k: 264, units: [["cup, crumbled", 150]] },  // SR28 01019
-  { name: "Halloumi", group: "Eggs & dairy", p: 22, k: 330, est: 1, units: [["slice", 30]] },  // label
-  { name: "Goat cheese, soft", group: "Eggs & dairy", p: 18.5, k: 264, units: [] },  // SR28 01159
-  { name: "Cream cheese", group: "Eggs & dairy", p: 6.2, k: 350, units: [["tbsp", 15]] },  // SR28 01017
+  { name: "Egg, whole, raw", group: "Eggs & dairy", p: 12.6, k: 143, de: ["Ei, roh", "Hühnerei", "Eier"], pl: ["Jajko, surowe", "jaja", "jajka", "jajo"], units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },  // SR28 01123
+  { name: "Egg white, raw", group: "Eggs & dairy", p: 10.9, k: 52, de: ["Eiklar, roh", "Eiweiß"], pl: ["Białko jaja", "białka jaj", "białko jajka"], units: [["large egg white", 33]] },  // SR28 01124
+  { name: "Egg yolk, raw", group: "Eggs & dairy", p: 15.9, k: 322, de: ["Eigelb, roh", "Dotter"], pl: ["Żółtko jaja", "żółtka"], units: [["large yolk", 17]] },  // SR28 01125
+  { name: "Milk, whole (3.25%)", group: "Eggs & dairy", p: 3.1, k: 61, de: ["Vollmilch", "Milch 3,5%", "Milch"], pl: ["Mleko pełnotłuste", "mleko 3,2%", "mleko"], units: [["cup", 244], ["ml", 1.03]] },  // SR28 01211
+  { name: "Milk, skim", group: "Eggs & dairy", p: 3.4, k: 34, de: ["Magermilch", "fettarme Milch", "Milch 0,1%"], pl: ["Mleko odtłuszczone", "mleko chude", "mleko 0%"], units: [["cup", 245], ["ml", 1.03]] },  // SR28 01085
+  { name: "Greek yogurt, plain, nonfat", group: "Eggs & dairy", p: 10.2, k: 59, de: ["Griechischer Joghurt, fettfrei", "griechischer Joghurt 0%"], pl: ["Jogurt grecki, odtłuszczony", "jogurt grecki 0%"], units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01256
+  { name: "Greek yogurt, plain, whole", group: "Eggs & dairy", p: 9, k: 97, de: ["Griechischer Joghurt, Vollmilch", "griechischer Joghurt"], pl: ["Jogurt grecki, pełnotłusty", "jogurt grecki"], units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01293
+  { name: "Skyr, plain", group: "Eggs & dairy", p: 11, k: 60, est: 1, de: ["Skyr"], pl: ["Skyr"], units: [["150 g tub", 150]] },  // label
+  { name: "Yogurt, plain, whole milk", group: "Eggs & dairy", p: 3.5, k: 61, de: ["Naturjoghurt, Vollmilch", "Joghurt natur", "Joghurt"], pl: ["Jogurt naturalny, pełnotłusty", "jogurt naturalny", "jogurt"], units: [["cup", 245]] },  // SR28 01116
+  { name: "Kefir, plain, lowfat", group: "Eggs & dairy", p: 3.8, k: 41, de: ["Kefir, fettarm", "Kefir"], pl: ["Kefir, niskotłuszczowy", "kefir"], units: [["cup", 243], ["ml", 1.03]] },  // SR28 01289
+  { name: "Cottage cheese, 2%", group: "Eggs & dairy", p: 10.4, k: 81, de: ["Hüttenkäse, 2%", "körniger Frischkäse"], pl: ["Serek wiejski, 2%", "twarożek ziarnisty", "serek wiejski"], units: [["cup", 226]] },  // SR28 01015
+  { name: "Cottage cheese, 4%", group: "Eggs & dairy", p: 11.1, k: 98, de: ["Hüttenkäse, 4%", "körniger Frischkäse"], pl: ["Serek wiejski, 4%", "twarożek ziarnisty"], units: [["cup", 226]] },  // SR28 01012
+  { name: "Quark, plain, low fat", group: "Eggs & dairy", p: 12, k: 67, est: 1, de: ["Magerquark", "Quark", "Speisequark"], pl: ["Twaróg chudy", "twaróg", "ser biały"], units: [["250 g tub", 250]] },  // label
+  { name: "Ricotta, part skim", group: "Eggs & dairy", p: 11.4, k: 138, de: ["Ricotta, teilentrahmt", "Ricotta"], pl: ["Ricotta, półtłusta", "ricotta"], units: [["cup", 246]] },  // SR28 01037
+  { name: "Cheddar cheese", group: "Eggs & dairy", p: 22.9, k: 404, de: ["Cheddar", "Cheddarkäse"], pl: ["Cheddar", "ser cheddar"], units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01009
+  { name: "Mozzarella, part skim", group: "Eggs & dairy", p: 24.3, k: 254, de: ["Mozzarella, teilentrahmt", "Mozzarella"], pl: ["Mozzarella, półtłusta", "mozzarella", "ser mozzarella"], units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01028
+  { name: "Mozzarella, whole milk", group: "Eggs & dairy", p: 22.2, k: 300, de: ["Mozzarella, Vollmilch", "Büffelmozzarella"], pl: ["Mozzarella, pełnotłusta", "mozzarella"], units: [["slice", 28], ["cup, shredded", 112]] },  // SR28 01026
+  { name: "Parmesan, hard", group: "Eggs & dairy", p: 35.8, k: 392, de: ["Parmesan", "Hartkäse", "Parmigiano"], pl: ["Parmezan", "ser parmezan"], units: [["tbsp, grated", 5]] },  // SR28 01033
+  { name: "Swiss cheese", group: "Eggs & dairy", p: 27, k: 393, de: ["Emmentaler", "Schweizer Käse"], pl: ["Ser szwajcarski", "ementaler", "ser żółty"], units: [["slice", 28]] },  // SR28 01040
+  { name: "Gouda cheese", group: "Eggs & dairy", p: 24.9, k: 356, de: ["Gouda", "Goudakäse"], pl: ["Gouda", "ser gouda", "gauda"], units: [["slice", 28]] },  // SR28 01022
+  { name: "Feta cheese", group: "Eggs & dairy", p: 14.2, k: 264, de: ["Feta", "Schafskäse"], pl: ["Feta", "ser feta"], units: [["cup, crumbled", 150]] },  // SR28 01019
+  { name: "Halloumi", group: "Eggs & dairy", p: 22, k: 330, est: 1, de: ["Halloumi", "Grillkäse"], pl: ["Halloumi", "ser halloumi"], units: [["slice", 30]] },  // label
+  { name: "Goat cheese, soft", group: "Eggs & dairy", p: 18.5, k: 264, de: ["Ziegenkäse, weich", "Ziegenfrischkäse"], pl: ["Ser kozi, miękki", "ser kozi"], units: [] },  // SR28 01159
+  { name: "Cream cheese", group: "Eggs & dairy", p: 6.2, k: 350, de: ["Frischkäse", "Doppelrahmfrischkäse"], pl: ["Serek śmietankowy", "serek kremowy", "philadelphia"], units: [["tbsp", 15]] },  // SR28 01017
   // ---- Poultry & meat ----
-  { name: "Chicken breast, skinless, raw", group: "Poultry & meat", p: 22.5, k: 120, units: [["breast", 272]] },  // SR28 05062
-  { name: "Chicken breast, skinless, cooked", group: "Poultry & meat", p: 30.5, k: 151, units: [["breast", 196]] },  // SR28 05747
-  { name: "Chicken thigh, skinless, cooked", group: "Poultry & meat", p: 24.8, k: 179, units: [["thigh", 116]] },  // SR28 05098
-  { name: "Chicken, rotisserie, breast meat", group: "Poultry & meat", p: 28, k: 144, units: [] },  // SR28 05000
-  { name: "Turkey breast, raw", group: "Poultry & meat", p: 23.7, k: 114, units: [] },  // SR28 05219
-  { name: "Turkey breast, cooked", group: "Poultry & meat", p: 29, k: 164, units: [] },  // SR28 05733
-  { name: "Turkey, deli slices", group: "Poultry & meat", p: 16.3, k: 100, units: [["slice", 15]] },  // SR28 07081
-  { name: "Beef steak, lean (sirloin), raw", group: "Poultry & meat", p: 21.9, k: 135, units: [] },  // SR28 23625
-  { name: "Beef steak, lean (sirloin), cooked", group: "Poultry & meat", p: 30.3, k: 188, units: [] },  // SR28 13455
-  { name: "Beef, ribeye, cooked", group: "Poultry & meat", p: 26.6, k: 265, units: [] },  // SR28 13096
-  { name: "Ground beef, 90% lean, raw", group: "Poultry & meat", p: 20, k: 176, units: [] },  // SR28 23562
-  { name: "Ground beef, 90% lean, cooked", group: "Poultry & meat", p: 26.1, k: 217, units: [] },  // SR28 23563
-  { name: "Beef jerky", group: "Poultry & meat", p: 33.2, k: 410, units: [["28 g bag", 28]] },  // SR28 19002
-  { name: "Beef liver, cooked", group: "Poultry & meat", p: 29.1, k: 191, units: [] },  // SR28 13326
-  { name: "Pork loin, raw", group: "Poultry & meat", p: 21.4, k: 143, units: [] },  // SR28 10024
-  { name: "Pork loin, cooked", group: "Poultry & meat", p: 27.1, k: 248, units: [] },  // SR28 10023
-  { name: "Pork tenderloin, raw", group: "Poultry & meat", p: 20.9, k: 109, units: [] },  // SR28 10060
-  { name: "Ham, cured, lean", group: "Poultry & meat", p: 18.3, k: 162, units: [["slice (1 oz)", 28], ["cup, diced", 140]] },  // SR28 10182
-  { name: "Bacon, cooked", group: "Poultry & meat", p: 33.9, k: 468, units: [["slice", 11.5]] },  // SR28 10862
-  { name: "Pork sausage, cooked", group: "Poultry & meat", p: 18.5, k: 325, units: [["link", 23], ["patty", 27]] },  // SR28 07064
-  { name: "Hot dog, beef", group: "Poultry & meat", p: 11.7, k: 322, units: [["frankfurter", 48]] },  // SR28 07945
-  { name: "Lamb, lean, cooked", group: "Poultry & meat", p: 28.2, k: 206, units: [] },  // SR28 17004
-  { name: "Duck breast, skinless, cooked", group: "Poultry & meat", p: 27.6, k: 140, units: [] },  // SR28 05316
-  { name: "Venison, cooked", group: "Poultry & meat", p: 30.2, k: 158, units: [] },  // SR28 17165
+  { name: "Chicken breast, skinless, raw", group: "Poultry & meat", p: 22.5, k: 120, de: ["Hähnchenbrust, roh", "Hühnerbrust", "Hähnchen", "Hühnchen"], pl: ["Pierś z kurczaka, surowa", "kurczak", "pierś kurczaka", "filet z kurczaka"], units: [["breast", 272]] },  // SR28 05062
+  { name: "Chicken breast, skinless, cooked", group: "Poultry & meat", p: 30.5, k: 151, de: ["Hähnchenbrust, gegart", "Hähnchenbrust gegrillt", "Hühnerbrust", "Hähnchen"], pl: ["Pierś z kurczaka, gotowana", "kurczak grillowany", "pierś kurczaka", "kurczak"], units: [["breast", 196]] },  // SR28 05747
+  { name: "Chicken thigh, skinless, cooked", group: "Poultry & meat", p: 24.8, k: 179, de: ["Hähnchenschenkel, gegart", "Hühnerschenkel", "Oberschenkel"], pl: ["Udko z kurczaka, gotowane", "udko kurczaka", "udziec"], units: [["thigh", 116]] },  // SR28 05098
+  { name: "Chicken, rotisserie, breast meat", group: "Poultry & meat", p: 28, k: 144, de: ["Brathähnchen, Brustfleisch", "Grillhähnchen", "Hähnchen vom Grill"], pl: ["Kurczak z rożna, pierś", "kurczak pieczony", "kurczak z grilla"], units: [] },  // SR28 05000
+  { name: "Turkey breast, raw", group: "Poultry & meat", p: 23.7, k: 114, de: ["Putenbrust, roh", "Truthahnbrust", "Pute"], pl: ["Pierś z indyka, surowa", "indyk", "filet z indyka"], units: [] },  // SR28 05219
+  { name: "Turkey breast, cooked", group: "Poultry & meat", p: 29, k: 164, de: ["Putenbrust, gegart", "Pute gebraten"], pl: ["Pierś z indyka, gotowana", "indyk pieczony"], units: [] },  // SR28 05733
+  { name: "Turkey, deli slices", group: "Poultry & meat", p: 16.3, k: 100, de: ["Putenaufschnitt", "Putenbrust Aufschnitt", "Wurst"], pl: ["Wędlina z indyka", "indyk w plastrach", "szynka z indyka"], units: [["slice", 15]] },  // SR28 07081
+  { name: "Beef steak, lean (sirloin), raw", group: "Poultry & meat", p: 21.9, k: 135, de: ["Rindersteak, mager (Hüfte), roh", "Rindfleisch", "Steak", "Hüftsteak", "Roastbeef"], pl: ["Stek wołowy, chudy (rostbef), surowy", "wołowina", "stek", "rostbef"], units: [] },  // SR28 23625
+  { name: "Beef steak, lean (sirloin), cooked", group: "Poultry & meat", p: 30.3, k: 188, de: ["Rindersteak, mager, gegart", "Rindfleisch gebraten", "Steak"], pl: ["Stek wołowy, chudy, gotowany", "wołowina smażona", "stek"], units: [] },  // SR28 13455
+  { name: "Beef, ribeye, cooked", group: "Poultry & meat", p: 26.6, k: 265, de: ["Ribeye-Steak, gegart", "Entrecôte", "Hochrippe"], pl: ["Antrykot (ribeye), gotowany", "stek ribeye", "antrykot"], units: [] },  // SR28 13096
+  { name: "Ground beef, 90% lean, raw", group: "Poultry & meat", p: 20, k: 176, de: ["Rinderhackfleisch, 90% mager, roh", "Hackfleisch", "Rinderhack", "Faschiertes"], pl: ["Mielona wołowina, 90% chuda, surowa", "mięso mielone", "wołowina mielona"], units: [] },  // SR28 23562
+  { name: "Ground beef, 90% lean, cooked", group: "Poultry & meat", p: 26.1, k: 217, de: ["Rinderhackfleisch, gegart", "Hackfleisch gebraten"], pl: ["Mielona wołowina, gotowana", "mięso mielone smażone"], units: [] },  // SR28 23563
+  { name: "Beef jerky", group: "Poultry & meat", p: 33.2, k: 410, de: ["Beef Jerky", "Trockenfleisch", "Dörrfleisch"], pl: ["Suszona wołowina", "jerky", "susz mięsny"], units: [["28 g bag", 28]] },  // SR28 19002
+  { name: "Beef liver, cooked", group: "Poultry & meat", p: 29.1, k: 191, de: ["Rinderleber, gegart", "Leber"], pl: ["Wątróbka wołowa, gotowana", "wątróbka", "wątroba"], units: [] },  // SR28 13326
+  { name: "Pork loin, raw", group: "Poultry & meat", p: 21.4, k: 143, de: ["Schweinelende, roh", "Schweinefleisch", "Schweinerücken", "Kotelett"], pl: ["Schab wieprzowy, surowy", "wieprzowina", "schab"], units: [] },  // SR28 10024
+  { name: "Pork loin, cooked", group: "Poultry & meat", p: 27.1, k: 248, de: ["Schweinelende, gegart", "Schweinebraten"], pl: ["Schab wieprzowy, gotowany", "schab pieczony"], units: [] },  // SR28 10023
+  { name: "Pork tenderloin, raw", group: "Poultry & meat", p: 20.9, k: 109, de: ["Schweinefilet, roh", "Schweinelende", "Filet"], pl: ["Polędwiczka wieprzowa, surowa", "polędwiczka"], units: [] },  // SR28 10060
+  { name: "Ham, cured, lean", group: "Poultry & meat", p: 18.3, k: 162, de: ["Kochschinken, mager", "Schinken"], pl: ["Szynka, chuda", "szynka wieprzowa", "wędlina"], units: [["slice (1 oz)", 28], ["cup, diced", 140]] },  // SR28 10182
+  { name: "Bacon, cooked", group: "Poultry & meat", p: 33.9, k: 468, de: ["Speck, gebraten", "Frühstücksspeck", "Bacon"], pl: ["Boczek, smażony", "bekon", "boczek"], units: [["slice", 11.5]] },  // SR28 10862
+  { name: "Pork sausage, cooked", group: "Poultry & meat", p: 18.5, k: 325, de: ["Bratwurst, gegart", "Schweinswurst", "Wurst"], pl: ["Kiełbasa wieprzowa, smażona", "kiełbasa", "kiełbaska"], units: [["link", 23], ["patty", 27]] },  // SR28 07064
+  { name: "Hot dog, beef", group: "Poultry & meat", p: 11.7, k: 322, de: ["Hot Dog, Rind", "Wiener Würstchen", "Frankfurter"], pl: ["Parówka wołowa", "parówka", "hot dog"], units: [["frankfurter", 48]] },  // SR28 07945
+  { name: "Lamb, lean, cooked", group: "Poultry & meat", p: 28.2, k: 206, de: ["Lammfleisch, mager, gegart", "Lamm"], pl: ["Jagnięcina, chuda, gotowana", "jagnięcina", "baranina"], units: [] },  // SR28 17004
+  { name: "Duck breast, skinless, cooked", group: "Poultry & meat", p: 27.6, k: 140, de: ["Entenbrust, ohne Haut, gegart", "Ente"], pl: ["Pierś z kaczki, bez skóry", "kaczka", "filet z kaczki"], units: [] },  // SR28 05316
+  { name: "Venison, cooked", group: "Poultry & meat", p: 30.2, k: 158, de: ["Hirschfleisch, gegart", "Wild", "Wildfleisch", "Reh"], pl: ["Dziczyzna (jeleń), gotowana", "dziczyzna", "sarnina", "jeleń"], units: [] },  // SR28 17165
   // ---- Fish & seafood ----
-  { name: "Salmon, Atlantic, farmed, raw", group: "Fish & seafood", p: 20.4, k: 208, units: [["half fillet", 198]] },  // SR28 15236
-  { name: "Salmon, Atlantic, farmed, cooked", group: "Fish & seafood", p: 22.1, k: 206, units: [["half fillet", 178]] },  // SR28 15237
-  { name: "Salmon, smoked", group: "Fish & seafood", p: 18.3, k: 117, units: [["100 g pack", 100]] },  // SR28 15077
-  { name: "Tuna, white (albacore), canned in water", group: "Fish & seafood", p: 23.6, k: 128, units: [["can (5 oz), drained", 142]] },  // SR28 15126
-  { name: "Tuna, light, canned in water", group: "Fish & seafood", p: 19.4, k: 86, units: [["can (5 oz), drained", 142]] },  // SR28 15121
-  { name: "Tuna, yellowfin, raw", group: "Fish & seafood", p: 24.4, k: 109, units: [] },  // SR28 15127
-  { name: "Cod, raw", group: "Fish & seafood", p: 17.8, k: 82, units: [["fillet", 231]] },  // SR28 15015
-  { name: "Cod, cooked", group: "Fish & seafood", p: 22.8, k: 105, units: [] },  // SR28 15016
-  { name: "Tilapia, raw", group: "Fish & seafood", p: 20.1, k: 96, units: [["fillet", 116]] },  // SR28 15261
-  { name: "Trout, raw", group: "Fish & seafood", p: 20.8, k: 148, units: [] },  // SR28 15114
-  { name: "Mackerel, raw", group: "Fish & seafood", p: 18.6, k: 205, units: [] },  // SR28 15046
-  { name: "Sardines, canned in oil", group: "Fish & seafood", p: 24.6, k: 208, units: [["can (3.75 oz), drained", 92]] },  // SR28 15088
-  { name: "Shrimp, raw", group: "Fish & seafood", p: 20.1, k: 85, units: [["shrimp, large", 15]] },  // SR28 15270
-  { name: "Shrimp, cooked", group: "Fish & seafood", p: 24, k: 99, units: [["shrimp, large", 11]] },  // SR28 15271
-  { name: "Crab, blue, cooked", group: "Fish & seafood", p: 17.9, k: 83, units: [] },  // SR28 15140
-  { name: "Lobster, cooked", group: "Fish & seafood", p: 19, k: 89, units: [] },  // SR28 15148
-  { name: "Scallops, raw", group: "Fish & seafood", p: 12.1, k: 69, units: [] },  // SR28 15172
-  { name: "Mussels, cooked", group: "Fish & seafood", p: 23.8, k: 172, units: [] },  // SR28 15165
-  { name: "Octopus, cooked", group: "Fish & seafood", p: 29.8, k: 164, units: [] },  // SR28 15230
+  { name: "Salmon, Atlantic, farmed, raw", group: "Fish & seafood", p: 20.4, k: 208, de: ["Lachs, Zucht, roh", "Lachs", "Atlantiklachs"], pl: ["Łosoś atlantycki, hodowlany, surowy", "łosoś"], units: [["half fillet", 198]] },  // SR28 15236
+  { name: "Salmon, Atlantic, farmed, cooked", group: "Fish & seafood", p: 22.1, k: 206, de: ["Lachs, Zucht, gegart", "Lachs gebraten"], pl: ["Łosoś, hodowlany, gotowany", "łosoś pieczony"], units: [["half fillet", 178]] },  // SR28 15237
+  { name: "Salmon, smoked", group: "Fish & seafood", p: 18.3, k: 117, de: ["Räucherlachs", "Lachs geräuchert", "Graved Lachs"], pl: ["Łosoś wędzony", "wędzony łosoś"], units: [["100 g pack", 100]] },  // SR28 15077
+  { name: "Tuna, white (albacore), canned in water", group: "Fish & seafood", p: 23.6, k: 128, de: ["Thunfisch, weiß, in Wasser", "Thunfisch aus der Dose", "Thunfisch"], pl: ["Tuńczyk biały, w wodzie", "tuńczyk", "tuńczyk z puszki"], units: [["can (5 oz), drained", 142]] },  // SR28 15126
+  { name: "Tuna, light, canned in water", group: "Fish & seafood", p: 19.4, k: 86, de: ["Thunfisch, hell, in Wasser", "Thunfisch Dose", "Thunfisch"], pl: ["Tuńczyk jasny, w wodzie", "tuńczyk w puszce", "tuńczyk"], units: [["can (5 oz), drained", 142]] },  // SR28 15121
+  { name: "Tuna, yellowfin, raw", group: "Fish & seafood", p: 24.4, k: 109, de: ["Gelbflossenthun, roh", "Thunfischsteak", "Ahi"], pl: ["Tuńczyk żółtopłetwy, surowy", "stek z tuńczyka"], units: [] },  // SR28 15127
+  { name: "Cod, raw", group: "Fish & seafood", p: 17.8, k: 82, de: ["Kabeljau, roh", "Dorsch"], pl: ["Dorsz, surowy", "dorsz"], units: [["fillet", 231]] },  // SR28 15015
+  { name: "Cod, cooked", group: "Fish & seafood", p: 22.8, k: 105, de: ["Kabeljau, gegart", "Dorsch gekocht"], pl: ["Dorsz, gotowany", "dorsz"], units: [] },  // SR28 15016
+  { name: "Tilapia, raw", group: "Fish & seafood", p: 20.1, k: 96, de: ["Tilapia, roh", "Buntbarsch"], pl: ["Tilapia, surowa", "tilapia"], units: [["fillet", 116]] },  // SR28 15261
+  { name: "Trout, raw", group: "Fish & seafood", p: 20.8, k: 148, de: ["Forelle, roh", "Forelle"], pl: ["Pstrąg, surowy", "pstrąg"], units: [] },  // SR28 15114
+  { name: "Mackerel, raw", group: "Fish & seafood", p: 18.6, k: 205, de: ["Makrele, roh", "Makrele"], pl: ["Makrela, surowa", "makrela"], units: [] },  // SR28 15046
+  { name: "Sardines, canned in oil", group: "Fish & seafood", p: 24.6, k: 208, de: ["Sardinen in Öl", "Ölsardinen"], pl: ["Sardynki w oleju", "sardynki"], units: [["can (3.75 oz), drained", 92]] },  // SR28 15088
+  { name: "Shrimp, raw", group: "Fish & seafood", p: 20.1, k: 85, de: ["Garnelen, roh", "Shrimps", "Krabben"], pl: ["Krewetki, surowe", "krewetki"], units: [["shrimp, large", 15]] },  // SR28 15270
+  { name: "Shrimp, cooked", group: "Fish & seafood", p: 24, k: 99, de: ["Garnelen, gegart", "Shrimps gekocht"], pl: ["Krewetki, gotowane", "krewetki"], units: [["shrimp, large", 11]] },  // SR28 15271
+  { name: "Crab, blue, cooked", group: "Fish & seafood", p: 17.9, k: 83, de: ["Krabbenfleisch, gegart", "Krebsfleisch", "Taschenkrebs"], pl: ["Mięso kraba, gotowane", "krab"], units: [] },  // SR28 15140
+  { name: "Lobster, cooked", group: "Fish & seafood", p: 19, k: 89, de: ["Hummer, gegart", "Hummer"], pl: ["Homar, gotowany", "homar"], units: [] },  // SR28 15148
+  { name: "Scallops, raw", group: "Fish & seafood", p: 12.1, k: 69, de: ["Jakobsmuscheln, roh", "Kammmuscheln"], pl: ["Przegrzebki, surowe", "małże świętego Jakuba"], units: [] },  // SR28 15172
+  { name: "Mussels, cooked", group: "Fish & seafood", p: 23.8, k: 172, de: ["Miesmuscheln, gegart", "Muscheln"], pl: ["Małże, gotowane", "omułki", "małże"], units: [] },  // SR28 15165
+  { name: "Octopus, cooked", group: "Fish & seafood", p: 29.8, k: 164, de: ["Oktopus, gegart", "Tintenfisch", "Krake"], pl: ["Ośmiornica, gotowana", "ośmiornica"], units: [] },  // SR28 15230
   // ---- Supplements ----
-  { name: "Whey protein isolate powder", group: "Supplements", p: 85, k: 380, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Whey protein concentrate powder", group: "Supplements", p: 80, k: 400, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Casein protein powder", group: "Supplements", p: 75, k: 370, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Pea protein powder", group: "Supplements", p: 80, k: 380, est: 1, units: [["scoop (30 g)", 30]] },  // label
-  { name: "Soy protein isolate powder", group: "Supplements", p: 88.3, k: 335, units: [["scoop (30 g)", 30]] },  // SR28 16122
-  { name: "Collagen peptides", group: "Supplements", p: 90, k: 355, est: 1, units: [["scoop (20 g)", 20]] },  // label
-  { name: "Protein bar, typical", group: "Supplements", p: 30.3, k: 412, units: [["bar", 60]] },  // SR28 25067
-  { name: "Nutritional yeast", group: "Supplements", p: 50, k: 350, est: 1, units: [["tbsp", 5]] },  // label
+  { name: "Whey protein isolate powder", group: "Supplements", p: 85, k: 380, est: 1, de: ["Whey-Protein-Isolat", "Molkenprotein Isolat", "Eiweißpulver", "Proteinpulver"], pl: ["Izolat białka serwatkowego", "odżywka białkowa", "białko serwatkowe", "WPI"], units: [["scoop (30 g)", 30]] },  // label
+  { name: "Whey protein concentrate powder", group: "Supplements", p: 80, k: 400, est: 1, de: ["Whey-Protein-Konzentrat", "Molkenprotein", "Proteinpulver", "Eiweißpulver"], pl: ["Koncentrat białka serwatkowego", "WPC", "białko serwatkowe", "odżywka białkowa"], units: [["scoop (30 g)", 30]] },  // label
+  { name: "Casein protein powder", group: "Supplements", p: 75, k: 370, est: 1, de: ["Casein-Protein", "Kasein", "Nachtprotein"], pl: ["Kazeina", "białko kazeinowe"], units: [["scoop (30 g)", 30]] },  // label
+  { name: "Pea protein powder", group: "Supplements", p: 80, k: 380, est: 1, de: ["Erbsenprotein", "Erbsenproteinpulver"], pl: ["Białko grochu", "izolat białka grochu"], units: [["scoop (30 g)", 30]] },  // label
+  { name: "Soy protein isolate powder", group: "Supplements", p: 88.3, k: 335, de: ["Sojaprotein-Isolat", "Sojaeiweiß"], pl: ["Izolat białka sojowego", "białko sojowe"], units: [["scoop (30 g)", 30]] },  // SR28 16122
+  { name: "Collagen peptides", group: "Supplements", p: 90, k: 355, est: 1, de: ["Kollagenpeptide", "Kollagen"], pl: ["Peptydy kolagenowe", "kolagen"], units: [["scoop (20 g)", 20]] },  // label
+  { name: "Protein bar, typical", group: "Supplements", p: 30.3, k: 412, de: ["Proteinriegel", "Eiweißriegel"], pl: ["Baton proteinowy", "baton białkowy"], units: [["bar", 60]] },  // SR28 25067
+  { name: "Nutritional yeast", group: "Supplements", p: 50, k: 350, est: 1, de: ["Nährhefe", "Hefeflocken", "Edelhefe"], pl: ["Płatki drożdżowe", "drożdże nieaktywne"], units: [["tbsp", 5]] },  // label
   // ---- Plant protein ----
-  { name: "Tofu, firm", group: "Plant protein", p: 10.9, k: 85, units: [["block (14 oz)", 396], ["1/2 cup", 126]] },  // SR28 16281
-  { name: "Tofu, silken", group: "Plant protein", p: 4.8, k: 43, units: [["1/2 cup", 116]] },  // SR28 16278
-  { name: "Tempeh", group: "Plant protein", p: 20.3, k: 192, units: [["1/2 cup", 83]] },  // SR28 16114
-  { name: "Seitan", group: "Plant protein", p: 21, k: 130, est: 1, units: [] },  // label
-  { name: "Edamame, shelled, cooked", group: "Plant protein", p: 11.9, k: 121, units: [["cup", 155]] },  // SR28 11212
-  { name: "Soybeans, cooked", group: "Plant protein", p: 18.2, k: 172, units: [["cup", 172]] },  // SR28 16109
-  { name: "Lentils, cooked", group: "Plant protein", p: 9, k: 116, units: [["cup", 198]] },  // SR28 16070
-  { name: "Lentils, dry", group: "Plant protein", p: 24.6, k: 352, units: [["cup", 192]] },  // SR28 16069
-  { name: "Chickpeas, cooked", group: "Plant protein", p: 8.9, k: 164, units: [["cup", 164]] },  // SR28 16057
-  { name: "Chickpeas, canned, drained", group: "Plant protein", p: 7, k: 139, units: [["can, drained", 240]] },  // SR28 16358
-  { name: "Black beans, cooked", group: "Plant protein", p: 8.9, k: 132, units: [["cup", 172]] },  // SR28 16015
-  { name: "Kidney beans, cooked", group: "Plant protein", p: 8.7, k: 127, units: [["cup", 177]] },  // SR28 16033
-  { name: "Hummus, commercial", group: "Plant protein", p: 7.9, k: 166, units: [["tbsp", 15]] },  // SR28 16158
-  { name: "Soy milk, plain, unfortified", group: "Plant protein", p: 3.3, k: 54, units: [["cup", 243], ["ml", 1.03]] },  // SR28 16120
-  { name: "Oat milk", group: "Plant protein", p: 0.4, k: 48, est: 1, units: [["cup", 240], ["ml", 1]] },  // label
-  { name: "Almond milk, unsweetened", group: "Plant protein", p: 0.6, k: 15, units: [["cup", 240], ["ml", 1]] },  // SR28 14091
+  { name: "Tofu, firm", group: "Plant protein", p: 10.9, k: 85, de: ["Tofu, fest", "Tofu"], pl: ["Tofu, twarde", "tofu"], units: [["block (14 oz)", 396], ["1/2 cup", 126]] },  // SR28 16281
+  { name: "Tofu, silken", group: "Plant protein", p: 4.8, k: 43, de: ["Seidentofu", "Tofu weich"], pl: ["Tofu jedwabiste", "tofu miękkie"], units: [["1/2 cup", 116]] },  // SR28 16278
+  { name: "Tempeh", group: "Plant protein", p: 20.3, k: 192, de: ["Tempeh"], pl: ["Tempeh"], units: [["1/2 cup", 83]] },  // SR28 16114
+  { name: "Seitan", group: "Plant protein", p: 21, k: 130, est: 1, de: ["Seitan", "Weizeneiweiß"], pl: ["Seitan", "białko pszenne"], units: [] },  // label
+  { name: "Edamame, shelled, cooked", group: "Plant protein", p: 11.9, k: 121, de: ["Edamame, gegart", "grüne Sojabohnen"], pl: ["Edamame, gotowane", "zielona soja"], units: [["cup", 155]] },  // SR28 11212
+  { name: "Soybeans, cooked", group: "Plant protein", p: 18.2, k: 172, de: ["Sojabohnen, gegart", "Soja"], pl: ["Soja, gotowana", "ziarna soi"], units: [["cup", 172]] },  // SR28 16109
+  { name: "Lentils, cooked", group: "Plant protein", p: 9, k: 116, de: ["Linsen, gegart", "Linsen gekocht"], pl: ["Soczewica, gotowana", "soczewica"], units: [["cup", 198]] },  // SR28 16070
+  { name: "Lentils, dry", group: "Plant protein", p: 24.6, k: 352, de: ["Linsen, trocken", "rohe Linsen"], pl: ["Soczewica, sucha", "soczewica surowa"], units: [["cup", 192]] },  // SR28 16069
+  { name: "Chickpeas, cooked", group: "Plant protein", p: 8.9, k: 164, de: ["Kichererbsen, gegart", "Kichererbsen"], pl: ["Ciecierzyca, gotowana", "ciecierzyca", "cieciorka"], units: [["cup", 164]] },  // SR28 16057
+  { name: "Chickpeas, canned, drained", group: "Plant protein", p: 7, k: 139, de: ["Kichererbsen aus der Dose", "Kichererbsen Dose"], pl: ["Ciecierzyca z puszki", "ciecierzyca konserwowa"], units: [["can, drained", 240]] },  // SR28 16358
+  { name: "Black beans, cooked", group: "Plant protein", p: 8.9, k: 132, de: ["Schwarze Bohnen, gegart", "schwarze Bohnen"], pl: ["Czarna fasola, gotowana", "fasola czarna"], units: [["cup", 172]] },  // SR28 16015
+  { name: "Kidney beans, cooked", group: "Plant protein", p: 8.7, k: 127, de: ["Kidneybohnen, gegart", "rote Bohnen"], pl: ["Fasola czerwona, gotowana", "fasola kidney", "czerwona fasola"], units: [["cup", 177]] },  // SR28 16033
+  { name: "Hummus, commercial", group: "Plant protein", p: 7.9, k: 166, de: ["Hummus", "Kichererbsenpaste"], pl: ["Hummus", "humus", "pasta z ciecierzycy"], units: [["tbsp", 15]] },  // SR28 16158
+  { name: "Soy milk, plain, unfortified", group: "Plant protein", p: 3.3, k: 54, de: ["Sojamilch, natur", "Sojadrink"], pl: ["Mleko sojowe", "napój sojowy"], units: [["cup", 243], ["ml", 1.03]] },  // SR28 16120
+  { name: "Oat milk", group: "Plant protein", p: 0.4, k: 48, est: 1, de: ["Hafermilch", "Haferdrink"], pl: ["Mleko owsiane", "napój owsiany"], units: [["cup", 240], ["ml", 1]] },  // label
+  { name: "Almond milk, unsweetened", group: "Plant protein", p: 0.6, k: 15, de: ["Mandelmilch, ungesüßt", "Mandeldrink"], pl: ["Mleko migdałowe, niesłodzone", "napój migdałowy"], units: [["cup", 240], ["ml", 1]] },  // SR28 14091
   // ---- Nuts & seeds ----
-  { name: "Peanut butter, smooth", group: "Nuts & seeds", p: 22.2, k: 598, units: [["tbsp", 16]] },  // SR28 16098
-  { name: "Peanuts, dry-roasted", group: "Nuts & seeds", p: 24.4, k: 587, units: [["handful (28 g)", 28]] },  // SR28 16390
-  { name: "Almonds", group: "Nuts & seeds", p: 21.1, k: 579, units: [["handful (28 g)", 28], ["almond", 1.2]] },  // SR28 12061
-  { name: "Cashews, raw", group: "Nuts & seeds", p: 18.2, k: 553, units: [["handful (28 g)", 28]] },  // SR28 12087
-  { name: "Walnuts", group: "Nuts & seeds", p: 15.2, k: 654, units: [["handful (28 g)", 28]] },  // SR28 12155
-  { name: "Pistachios, raw", group: "Nuts & seeds", p: 20.2, k: 560, units: [["handful (28 g)", 28]] },  // SR28 12151
-  { name: "Pumpkin seeds", group: "Nuts & seeds", p: 30.2, k: 559, units: [["handful (28 g)", 28]] },  // SR28 12014
-  { name: "Sunflower seeds", group: "Nuts & seeds", p: 20.8, k: 584, units: [["handful (28 g)", 28]] },  // SR28 12036
-  { name: "Chia seeds", group: "Nuts & seeds", p: 16.5, k: 486, units: [["tbsp", 12]] },  // SR28 12006
-  { name: "Hemp seeds, hulled", group: "Nuts & seeds", p: 31.6, k: 553, units: [["tbsp", 10]] },  // SR28 12012
-  { name: "Flaxseed, ground", group: "Nuts & seeds", p: 18.3, k: 534, units: [["tbsp", 7]] },  // SR28 12220
+  { name: "Peanut butter, smooth", group: "Nuts & seeds", p: 22.2, k: 598, de: ["Erdnussbutter", "Erdnussmus"], pl: ["Masło orzechowe", "masło z orzechów arachidowych"], units: [["tbsp", 16]] },  // SR28 16098
+  { name: "Peanuts, dry-roasted", group: "Nuts & seeds", p: 24.4, k: 587, de: ["Erdnüsse, geröstet", "Erdnüsse"], pl: ["Orzeszki ziemne, prażone", "orzeszki ziemne", "fistaszki", "orzechy arachidowe"], units: [["handful (28 g)", 28]] },  // SR28 16390
+  { name: "Almonds", group: "Nuts & seeds", p: 21.1, k: 579, de: ["Mandeln", "Mandel"], pl: ["Migdały", "migdał"], units: [["handful (28 g)", 28], ["almond", 1.2]] },  // SR28 12061
+  { name: "Cashews, raw", group: "Nuts & seeds", p: 18.2, k: 553, de: ["Cashewkerne, roh", "Cashews", "Cashewnüsse"], pl: ["Nerkowce, surowe", "orzechy nerkowca", "nerkowiec"], units: [["handful (28 g)", 28]] },  // SR28 12087
+  { name: "Walnuts", group: "Nuts & seeds", p: 15.2, k: 654, de: ["Walnüsse", "Baumnüsse"], pl: ["Orzechy włoskie", "orzech włoski"], units: [["handful (28 g)", 28]] },  // SR28 12155
+  { name: "Pistachios, raw", group: "Nuts & seeds", p: 20.2, k: 560, de: ["Pistazien, roh", "Pistazien"], pl: ["Pistacje, surowe", "pistacje"], units: [["handful (28 g)", 28]] },  // SR28 12151
+  { name: "Pumpkin seeds", group: "Nuts & seeds", p: 30.2, k: 559, de: ["Kürbiskerne", "Kürbissamen"], pl: ["Pestki dyni", "nasiona dyni"], units: [["handful (28 g)", 28]] },  // SR28 12014
+  { name: "Sunflower seeds", group: "Nuts & seeds", p: 20.8, k: 584, de: ["Sonnenblumenkerne"], pl: ["Nasiona słonecznika", "pestki słonecznika", "słonecznik"], units: [["handful (28 g)", 28]] },  // SR28 12036
+  { name: "Chia seeds", group: "Nuts & seeds", p: 16.5, k: 486, de: ["Chiasamen", "Chia"], pl: ["Nasiona chia", "chia"], units: [["tbsp", 12]] },  // SR28 12006
+  { name: "Hemp seeds, hulled", group: "Nuts & seeds", p: 31.6, k: 553, de: ["Hanfsamen, geschält", "Hanfnüsse"], pl: ["Nasiona konopi, łuskane", "konopie"], units: [["tbsp", 10]] },  // SR28 12012
+  { name: "Flaxseed, ground", group: "Nuts & seeds", p: 18.3, k: 534, de: ["Leinsamen, gemahlen", "Leinsamen"], pl: ["Siemię lniane, mielone", "siemię lniane", "len"], units: [["tbsp", 7]] },  // SR28 12220
   // ---- Grains & starches ----
-  { name: "Oats, rolled, dry", group: "Grains & starches", p: 13.2, k: 379, units: [["1/2 cup (40 g)", 40]] },  // SR28 08120
-  { name: "Oatmeal, cooked with water", group: "Grains & starches", p: 2.5, k: 71, units: [["cup", 234]] },  // SR28 08121
-  { name: "Bread, whole wheat", group: "Grains & starches", p: 12.4, k: 252, units: [["slice", 32]] },  // SR28 18075
-  { name: "Bread, white", group: "Grains & starches", p: 8.8, k: 266, units: [["slice", 29]] },  // SR28 18069
-  { name: "Tortilla, flour", group: "Grains & starches", p: 8.2, k: 306, units: [["tortilla", 45]] },  // SR28 18364
-  { name: "Rice, white, long-grain, cooked", group: "Grains & starches", p: 2.7, k: 130, units: [["cup", 158]] },  // SR28 20045
-  { name: "Rice, brown, long-grain, cooked", group: "Grains & starches", p: 2.7, k: 123, units: [["cup", 195]] },  // SR28 20037
-  { name: "Pasta, cooked", group: "Grains & starches", p: 5.8, k: 158, units: [["cup", 140]] },  // SR28 20121
-  { name: "Pasta, dry", group: "Grains & starches", p: 13, k: 371, units: [["portion (80 g)", 80]] },  // SR28 20120
-  { name: "Quinoa, cooked", group: "Grains & starches", p: 4.4, k: 120, units: [["cup", 185]] },  // SR28 20137
-  { name: "Couscous, cooked", group: "Grains & starches", p: 3.8, k: 112, units: [["cup", 157]] },  // SR28 20029
-  { name: "Bulgur, cooked", group: "Grains & starches", p: 3.1, k: 83, units: [["cup", 182]] },  // SR28 20013
-  { name: "Buckwheat groats, cooked", group: "Grains & starches", p: 3.4, k: 92, units: [["cup", 168]] },  // SR28 20010
-  { name: "Potato, boiled in skin", group: "Grains & starches", p: 1.9, k: 87, units: [["medium potato", 136], ["cup", 156]] },  // SR28 11365
-  { name: "Sweet potato, baked", group: "Grains & starches", p: 2, k: 90, units: [["medium potato", 114], ["cup", 200]] },  // SR28 11508
-  { name: "Pizza, cheese, regular crust", group: "Grains & starches", p: 10.4, k: 268, units: [["slice", 81]] },  // SR28 21224
+  { name: "Oats, rolled, dry", group: "Grains & starches", p: 13.2, k: 379, de: ["Haferflocken, trocken", "Hafer", "Haferflocken"], pl: ["Płatki owsiane, suche", "płatki owsiane", "owies"], units: [["1/2 cup (40 g)", 40]] },  // SR28 08120
+  { name: "Oatmeal, cooked with water", group: "Grains & starches", p: 2.5, k: 71, de: ["Haferbrei, gekocht", "Porridge", "Haferschleim"], pl: ["Owsianka, na wodzie", "owsianka"], units: [["cup", 234]] },  // SR28 08121
+  { name: "Bread, whole wheat", group: "Grains & starches", p: 12.4, k: 252, de: ["Vollkornbrot", "Vollkornweizenbrot", "Brot"], pl: ["Chleb pełnoziarnisty", "chleb razowy", "chleb"], units: [["slice", 32]] },  // SR28 18075
+  { name: "Bread, white", group: "Grains & starches", p: 8.8, k: 266, de: ["Weißbrot", "Toastbrot", "Brot"], pl: ["Chleb pszenny (biały)", "biały chleb", "chleb"], units: [["slice", 29]] },  // SR28 18069
+  { name: "Tortilla, flour", group: "Grains & starches", p: 8.2, k: 306, de: ["Weizentortilla", "Tortilla", "Wrap"], pl: ["Tortilla pszenna", "tortilla", "placek"], units: [["tortilla", 45]] },  // SR28 18364
+  { name: "Rice, white, long-grain, cooked", group: "Grains & starches", p: 2.7, k: 130, de: ["Reis, weiß, gekocht", "Langkornreis", "Reis"], pl: ["Ryż biały, ugotowany", "ryż", "ryż długoziarnisty"], units: [["cup", 158]] },  // SR28 20045
+  { name: "Rice, brown, long-grain, cooked", group: "Grains & starches", p: 2.7, k: 123, de: ["Naturreis, gekocht", "brauner Reis", "Vollkornreis"], pl: ["Ryż brązowy, ugotowany", "ryż brązowy", "ryż"], units: [["cup", 195]] },  // SR28 20037
+  { name: "Pasta, cooked", group: "Grains & starches", p: 5.8, k: 158, de: ["Nudeln, gekocht", "Pasta", "Spaghetti"], pl: ["Makaron, ugotowany", "makaron", "spaghetti"], units: [["cup", 140]] },  // SR28 20121
+  { name: "Pasta, dry", group: "Grains & starches", p: 13, k: 371, de: ["Nudeln, trocken", "Pasta roh", "Spaghetti trocken"], pl: ["Makaron, suchy", "makaron surowy"], units: [["portion (80 g)", 80]] },  // SR28 20120
+  { name: "Quinoa, cooked", group: "Grains & starches", p: 4.4, k: 120, de: ["Quinoa, gekocht", "Quinoa"], pl: ["Komosa ryżowa (quinoa), ugotowana", "quinoa", "komosa"], units: [["cup", 185]] },  // SR28 20137
+  { name: "Couscous, cooked", group: "Grains & starches", p: 3.8, k: 112, de: ["Couscous, gekocht", "Kuskus"], pl: ["Kuskus, ugotowany", "kuskus", "couscous"], units: [["cup", 157]] },  // SR28 20029
+  { name: "Bulgur, cooked", group: "Grains & starches", p: 3.1, k: 83, de: ["Bulgur, gekocht", "Bulgur"], pl: ["Bulgur, ugotowany", "kasza bulgur"], units: [["cup", 182]] },  // SR28 20013
+  { name: "Buckwheat groats, cooked", group: "Grains & starches", p: 3.4, k: 92, de: ["Buchweizen, gekocht", "Buchweizengrütze"], pl: ["Kasza gryczana, ugotowana", "gryka", "kasza gryczana"], units: [["cup", 168]] },  // SR28 20010
+  { name: "Potato, boiled in skin", group: "Grains & starches", p: 1.9, k: 87, de: ["Kartoffeln, gekocht", "Pellkartoffeln", "Kartoffel"], pl: ["Ziemniaki, gotowane", "ziemniaki", "kartofle"], units: [["medium potato", 136], ["cup", 156]] },  // SR28 11365
+  { name: "Sweet potato, baked", group: "Grains & starches", p: 2, k: 90, de: ["Süßkartoffel, gebacken", "Batate"], pl: ["Batat, pieczony", "bataty", "słodki ziemniak"], units: [["medium potato", 114], ["cup", 200]] },  // SR28 11508
+  { name: "Pizza, cheese, regular crust", group: "Grains & starches", p: 10.4, k: 268, de: ["Pizza Margherita (Käse)", "Käsepizza", "Pizza"], pl: ["Pizza z serem", "pizza", "margherita"], units: [["slice", 81]] },  // SR28 21224
   // ---- Vegetables & fruit ----
-  { name: "Broccoli, raw", group: "Vegetables & fruit", p: 2.8, k: 34, units: [["cup, chopped", 91]] },  // SR28 11090
-  { name: "Spinach, raw", group: "Vegetables & fruit", p: 2.9, k: 23, units: [["cup", 30]] },  // SR28 11457
-  { name: "Kale, raw", group: "Vegetables & fruit", p: 4.3, k: 49, units: [["cup", 16]] },  // SR28 11233
-  { name: "Green peas, cooked", group: "Vegetables & fruit", p: 5.4, k: 84, units: [["cup", 160]] },  // SR28 11305
-  { name: "Brussels sprouts, cooked", group: "Vegetables & fruit", p: 2.5, k: 36, units: [["cup", 156]] },  // SR28 11099
-  { name: "Asparagus, cooked", group: "Vegetables & fruit", p: 2.4, k: 22, units: [["spear", 15], ["cup", 180]] },  // SR28 11012
-  { name: "Mushrooms, white, raw", group: "Vegetables & fruit", p: 3.1, k: 22, units: [["cup, sliced", 70]] },  // SR28 11260
-  { name: "Sweet corn, cooked", group: "Vegetables & fruit", p: 3.4, k: 96, units: [["ear, medium", 103]] },  // SR28 11168
-  { name: "Avocado", group: "Vegetables & fruit", p: 2, k: 167, units: [["medium avocado", 136]] },  // SR28 09038
-  { name: "Banana", group: "Vegetables & fruit", p: 1.1, k: 89, units: [["medium banana", 118]] },  // SR28 09040
-  { name: "Apple, with skin", group: "Vegetables & fruit", p: 0.3, k: 52, units: [["medium apple", 182]] },  // SR28 09003
-  { name: "Blueberries", group: "Vegetables & fruit", p: 0.7, k: 57, units: [["cup", 148]] },  // SR28 09050
+  { name: "Broccoli, raw", group: "Vegetables & fruit", p: 2.8, k: 34, de: ["Brokkoli, roh", "Brokkoli"], pl: ["Brokuły, surowe", "brokuły", "brokuł"], units: [["cup, chopped", 91]] },  // SR28 11090
+  { name: "Spinach, raw", group: "Vegetables & fruit", p: 2.9, k: 23, de: ["Spinat, roh", "Spinat"], pl: ["Szpinak, surowy", "szpinak"], units: [["cup", 30]] },  // SR28 11457
+  { name: "Kale, raw", group: "Vegetables & fruit", p: 4.3, k: 49, de: ["Grünkohl, roh", "Grünkohl"], pl: ["Jarmuż, surowy", "jarmuż"], units: [["cup", 16]] },  // SR28 11233
+  { name: "Green peas, cooked", group: "Vegetables & fruit", p: 5.4, k: 84, de: ["Erbsen, gegart", "grüne Erbsen"], pl: ["Groszek zielony, gotowany", "groszek", "groch zielony"], units: [["cup", 160]] },  // SR28 11305
+  { name: "Brussels sprouts, cooked", group: "Vegetables & fruit", p: 2.5, k: 36, de: ["Rosenkohl, gegart", "Rosenkohl"], pl: ["Brukselka, gotowana", "brukselka"], units: [["cup", 156]] },  // SR28 11099
+  { name: "Asparagus, cooked", group: "Vegetables & fruit", p: 2.4, k: 22, de: ["Spargel, gegart", "Spargel"], pl: ["Szparagi, gotowane", "szparagi"], units: [["spear", 15], ["cup", 180]] },  // SR28 11012
+  { name: "Mushrooms, white, raw", group: "Vegetables & fruit", p: 3.1, k: 22, de: ["Champignons, roh", "Pilze", "weiße Champignons"], pl: ["Pieczarki, surowe", "pieczarki", "grzyby"], units: [["cup, sliced", 70]] },  // SR28 11260
+  { name: "Sweet corn, cooked", group: "Vegetables & fruit", p: 3.4, k: 96, de: ["Zuckermais, gegart", "Mais"], pl: ["Kukurydza cukrowa, gotowana", "kukurydza"], units: [["ear, medium", 103]] },  // SR28 11168
+  { name: "Avocado", group: "Vegetables & fruit", p: 2, k: 167, de: ["Avocado"], pl: ["Awokado", "avocado"], units: [["medium avocado", 136]] },  // SR28 09038
+  { name: "Banana", group: "Vegetables & fruit", p: 1.1, k: 89, de: ["Banane"], pl: ["Banan", "banany"], units: [["medium banana", 118]] },  // SR28 09040
+  { name: "Apple, with skin", group: "Vegetables & fruit", p: 0.3, k: 52, de: ["Apfel, mit Schale", "Apfel"], pl: ["Jabłko, ze skórką", "jabłko", "jabłka"], units: [["medium apple", 182]] },  // SR28 09003
+  { name: "Blueberries", group: "Vegetables & fruit", p: 0.7, k: 57, de: ["Heidelbeeren", "Blaubeeren"], pl: ["Borówki amerykańskie", "borówki", "jagody"], units: [["cup", 148]] },  // SR28 09050
 ];
 
 /* ============================================================
@@ -651,28 +664,83 @@ const fmtG = n => n < 10 ? n.toFixed(1) : String(Math.round(n));
 
 /* ============================================================
    SEARCH
+
+   Every food is searchable by its English, German and Polish names.
+   Matching is diacritic-insensitive in both directions, which is the
+   whole trick: "kase" has to find Käse and "losos" has to find łosoś,
+   because nobody reaches for the umlaut key mid-search.
    ============================================================ */
 const allFoods = () => [...state.customFoods, ...FOODS];
 
+// ł and ß do not decompose under NFKD, so they need spelling out.
+const LETTER_MAP = { "ß": "ss", "ł": "l", "æ": "ae", "ø": "o", "đ": "d", "ð": "d", "þ": "th" };
+const UMLAUTS = { "ä": "ae", "ö": "oe", "ü": "ue" };
+
+/** Strip accents: "Käse" -> "kase", "łosoś" -> "losos", "Wątróbka" -> "watrobka". */
+function fold(s) {
+  return s.toLowerCase()
+    .replace(/[ßłæøðþ]/g, ch => LETTER_MAP[ch] || ch)
+    .normalize("NFKD").replace(/[̀-ͯ]/g, "");
+}
+
+/** German is also spelled out: "Käse" is typed both "kase" and "kaese". */
+function foldVariants(s) {
+  const a = fold(s);
+  const b = fold(s.toLowerCase().replace(/[äöü]/g, ch => UMLAUTS[ch]));
+  return a === b ? [a] : [a, b];
+}
+
+/** All the strings a food can be found by, folded. Cached — FOODS never changes. */
+const hayCache = new WeakMap();
+function haystack(food) {
+  let hay = hayCache.get(food);
+  if (!hay) {
+    const parts = [food.name, food.brand || "", food.group || "",
+                   ...(food.de || []), ...(food.pl || [])];
+    hay = [...new Set(parts.flatMap(foldVariants))].join(" | ");
+    hayCache.set(food, hay);
+  }
+  return hay;
+}
+
+/** Which non-English name did this query match? Drives the subtitle in results. */
+function matchedAlias(food, query) {
+  const tokens = fold(query).split(/\s+/).filter(Boolean);
+  if (!tokens.length) return null;
+  if (foldVariants(food.name).some(v => tokens.every(t => v.includes(t)))) return null;
+  for (const alias of [...(food.de || []), ...(food.pl || [])]) {
+    if (foldVariants(alias).some(v => tokens.every(t => v.includes(t)))) return alias;
+  }
+  return null;
+}
+
 function searchFoods(query, limit = 40) {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const tokens = q.split(/\s+/);
+  const raw = query.trim();
+  if (!raw) return [];
+  const q = fold(raw);
+  const tokens = q.split(/\s+/).filter(Boolean);
   const scored = [];
   allFoods().forEach((food, idx) => {
-    const hay = (food.name + " " + (food.brand || "") + " " + (food.group || "")).toLowerCase();
-    if (!tokens.every(t => hay.includes(t))) return;
-    const name = food.name.toLowerCase();
-    let score;
-    if (name === q) score = 0;
-    // An exact whole-name match beats a prefix of a longer compound name, so
-    // "almond" finds Almonds before Almond milk. Plural-tolerant, since the
-    // database says "Almonds" but people type "almond".
-    else if (samePlural(name, q)) score = 1;
-    else if (name.startsWith(q)) score = 2;
-    else if (name.includes(q)) score = 3;
-    else if (new RegExp("\\b" + escapeRe(tokens[0])).test(name)) score = 4;
-    else score = 5;
+    if (!tokens.every(t => haystack(food).includes(t))) return;
+    // Score against whichever of the food's names fits the query best, so a
+    // German or Polish hit ranks by the same rules as an English one.
+    const labels = [food.name, ...(food.de || []), ...(food.pl || [])];
+    let score = 9;
+    for (const label of labels) {
+      for (const name of foldVariants(label)) {
+        let s;
+        if (name === q) s = 0;
+        // An exact whole-name match beats a prefix of a longer compound name, so
+        // "almond" finds Almonds before Almond milk. Plural-tolerant, since the
+        // database says "Almonds" but people type "almond".
+        else if (samePlural(name, q)) s = 1;
+        else if (name.startsWith(q)) s = 2;
+        else if (name.includes(q)) s = 3;
+        else if (new RegExp("\\b" + escapeRe(tokens[0])).test(name)) s = 4;
+        else s = 5;
+        if (s < score) score = s;
+      }
+    }
     // Ties break on position in the database, so the order foods are listed in
     // FOODS doubles as a "most likely what you meant" ranking. Custom (USDA)
     // foods sit at the front of allFoods(), so they surface first.
@@ -745,12 +813,26 @@ function renderResults() {
 
     const name = document.createElement("div");
     name.className = "name";
-    name.append(highlight(food.name, q));
+    // the English name lives in its own span: highlight() splits it into several
+    // nodes, and the alias line below needs to stay separable from it
+    const nm = document.createElement("span");
+    nm.className = "nm";
+    nm.append(highlight(food.name, q));
+    name.append(nm);
     if (food.brand) {
       const brand = document.createElement("span");
       brand.className = "brand";
       brand.textContent = "  " + food.brand;
       name.append(brand);
+    }
+    // If the query hit a German or Polish name, say which — otherwise an
+    // English-labelled row looks like an unexplained result.
+    const alias = matchedAlias(food, q);
+    if (alias) {
+      const sub = document.createElement("div");
+      sub.className = "alias";
+      sub.textContent = "└ " + alias;
+      name.append(sub);
     }
 
     const grp = document.createElement("div");
@@ -1160,9 +1242,11 @@ function browseRowsFor() {
   const grp = browseEls.group.value;
   const col = COLS[state.sort] || COLS.p;
 
+  // same folded, multilingual haystack the search box uses
+  const qTokens = fold(q).split(/\s+/).filter(Boolean);
   const matches = f =>
     (!grp || f.group === grp) &&
-    (!q || (f.name + " " + f.group).toLowerCase().includes(q));
+    qTokens.every(t => haystack(f).includes(t));
 
   const cmp = (a, b) => {
     const av = col.get(a), bv = col.get(b);
@@ -1257,7 +1341,9 @@ function browseRow(food, col, max, pinnedRow) {
   }
   const gp = document.createElement("div");
   gp.className = "bgrp";
-  gp.textContent = food.group + (food.brand ? " · " + food.brand : "");
+  const alias = matchedAlias(food, browseEls.q.value.trim());
+  gp.textContent = food.group + (food.brand ? " · " + food.brand : "") +
+                   (alias ? " · " + alias : "");
   tdName.append(nm, gp);
 
   const cell = (key, text, dim) => {
