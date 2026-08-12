@@ -1,0 +1,485 @@
+{
+ "_comment": "Provenance for the built-in food database in index.html. Each entry pins a food to its USDA Standard Reference 28 record (NDB number) and that record's exact protein value in g per 100 g. index.html rounds these to one decimal. test.mjs asserts the two still agree, so an accidental edit to a protein value fails the test suite.",
+ "_source": "USDA National Nutrient Database for Standard Reference, Release 28 (2015, slightly revised May 2016) \u2014 served by FoodData Central as the 'SR Legacy' data type. Public domain. Nutrient 203 = protein.",
+ "_note": "Foods absent from this file are marked est:1 in index.html: they have no USDA record and their values come from product labels.",
+ "_crossCheck": "Every value here was checked against two files in the official SR28 release: the primary NUT_DATA.txt table (119/119 agree) and the derived flat file ABBREV.txt (118/119 agree). USDA's own two files disagree for 16 of 8,789 foods; NUT_DATA.txt is authoritative because it is the primary table and carries the sample count and standard error for each figure.",
+ "_knownDiscrepancy": "Turkey breast, sliced, prepackaged (NDB 07081): NUT_DATA.txt says 16.33 g (n=7, SE 0.188, range 14.88-17.25), ABBREV.txt says 14.81 g. We use 16.33. Deli turkey varies a lot by brand anyway \u2014 check the packet if it matters.",
+ "foods": {
+  "Almond milk, unsweetened": {
+   "ndb": "14091",
+   "sr28ProteinPer100g": 0.59
+  },
+  "Almonds": {
+   "ndb": "12061",
+   "sr28ProteinPer100g": 21.15
+  },
+  "Apple, with skin": {
+   "ndb": "09003",
+   "sr28ProteinPer100g": 0.26
+  },
+  "Asparagus, cooked": {
+   "ndb": "11012",
+   "sr28ProteinPer100g": 2.4
+  },
+  "Avocado": {
+   "ndb": "09038",
+   "sr28ProteinPer100g": 1.96
+  },
+  "Bacon, cooked": {
+   "ndb": "10862",
+   "sr28ProteinPer100g": 33.92
+  },
+  "Banana": {
+   "ndb": "09040",
+   "sr28ProteinPer100g": 1.09
+  },
+  "Beef jerky": {
+   "ndb": "19002",
+   "sr28ProteinPer100g": 33.2
+  },
+  "Beef liver, cooked": {
+   "ndb": "13326",
+   "sr28ProteinPer100g": 29.08
+  },
+  "Beef steak, lean (sirloin), cooked": {
+   "ndb": "13455",
+   "sr28ProteinPer100g": 30.29
+  },
+  "Beef steak, lean (sirloin), raw": {
+   "ndb": "23625",
+   "sr28ProteinPer100g": 21.91
+  },
+  "Beef, ribeye, cooked": {
+   "ndb": "13096",
+   "sr28ProteinPer100g": 26.58
+  },
+  "Black beans, cooked": {
+   "ndb": "16015",
+   "sr28ProteinPer100g": 8.86
+  },
+  "Blueberries": {
+   "ndb": "09050",
+   "sr28ProteinPer100g": 0.74
+  },
+  "Bread, white": {
+   "ndb": "18069",
+   "sr28ProteinPer100g": 8.85
+  },
+  "Bread, whole wheat": {
+   "ndb": "18075",
+   "sr28ProteinPer100g": 12.45
+  },
+  "Broccoli, raw": {
+   "ndb": "11090",
+   "sr28ProteinPer100g": 2.82
+  },
+  "Brussels sprouts, cooked": {
+   "ndb": "11099",
+   "sr28ProteinPer100g": 2.55
+  },
+  "Buckwheat groats, cooked": {
+   "ndb": "20010",
+   "sr28ProteinPer100g": 3.38
+  },
+  "Bulgur, cooked": {
+   "ndb": "20013",
+   "sr28ProteinPer100g": 3.08
+  },
+  "Cashews, raw": {
+   "ndb": "12087",
+   "sr28ProteinPer100g": 18.22
+  },
+  "Cheddar cheese": {
+   "ndb": "01009",
+   "sr28ProteinPer100g": 22.87
+  },
+  "Chia seeds": {
+   "ndb": "12006",
+   "sr28ProteinPer100g": 16.54
+  },
+  "Chicken breast, skinless, cooked": {
+   "ndb": "05747",
+   "sr28ProteinPer100g": 30.54
+  },
+  "Chicken breast, skinless, raw": {
+   "ndb": "05062",
+   "sr28ProteinPer100g": 22.5
+  },
+  "Chicken thigh, skinless, cooked": {
+   "ndb": "05098",
+   "sr28ProteinPer100g": 24.76
+  },
+  "Chicken, rotisserie, breast meat": {
+   "ndb": "05000",
+   "sr28ProteinPer100g": 28.04
+  },
+  "Chickpeas, canned, drained": {
+   "ndb": "16358",
+   "sr28ProteinPer100g": 7.05
+  },
+  "Chickpeas, cooked": {
+   "ndb": "16057",
+   "sr28ProteinPer100g": 8.86
+  },
+  "Cod, cooked": {
+   "ndb": "15016",
+   "sr28ProteinPer100g": 22.83
+  },
+  "Cod, raw": {
+   "ndb": "15015",
+   "sr28ProteinPer100g": 17.81
+  },
+  "Cottage cheese, 2%": {
+   "ndb": "01015",
+   "sr28ProteinPer100g": 10.45
+  },
+  "Cottage cheese, 4%": {
+   "ndb": "01012",
+   "sr28ProteinPer100g": 11.12
+  },
+  "Couscous, cooked": {
+   "ndb": "20029",
+   "sr28ProteinPer100g": 3.79
+  },
+  "Crab, blue, cooked": {
+   "ndb": "15140",
+   "sr28ProteinPer100g": 17.88
+  },
+  "Cream cheese": {
+   "ndb": "01017",
+   "sr28ProteinPer100g": 6.15
+  },
+  "Duck breast, skinless, cooked": {
+   "ndb": "05316",
+   "sr28ProteinPer100g": 27.6
+  },
+  "Edamame, shelled, cooked": {
+   "ndb": "11212",
+   "sr28ProteinPer100g": 11.91
+  },
+  "Egg white, raw": {
+   "ndb": "01124",
+   "sr28ProteinPer100g": 10.9
+  },
+  "Egg yolk, raw": {
+   "ndb": "01125",
+   "sr28ProteinPer100g": 15.86
+  },
+  "Egg, whole, raw": {
+   "ndb": "01123",
+   "sr28ProteinPer100g": 12.56
+  },
+  "Feta cheese": {
+   "ndb": "01019",
+   "sr28ProteinPer100g": 14.21
+  },
+  "Flaxseed, ground": {
+   "ndb": "12220",
+   "sr28ProteinPer100g": 18.29
+  },
+  "Goat cheese, soft": {
+   "ndb": "01159",
+   "sr28ProteinPer100g": 18.52
+  },
+  "Gouda cheese": {
+   "ndb": "01022",
+   "sr28ProteinPer100g": 24.94
+  },
+  "Greek yogurt, plain, nonfat": {
+   "ndb": "01256",
+   "sr28ProteinPer100g": 10.19
+  },
+  "Greek yogurt, plain, whole": {
+   "ndb": "01293",
+   "sr28ProteinPer100g": 9.0
+  },
+  "Green peas, cooked": {
+   "ndb": "11305",
+   "sr28ProteinPer100g": 5.36
+  },
+  "Ground beef, 90% lean, cooked": {
+   "ndb": "23563",
+   "sr28ProteinPer100g": 26.11
+  },
+  "Ground beef, 90% lean, raw": {
+   "ndb": "23562",
+   "sr28ProteinPer100g": 20.0
+  },
+  "Ham, cured, lean": {
+   "ndb": "10182",
+   "sr28ProteinPer100g": 18.26
+  },
+  "Hemp seeds, hulled": {
+   "ndb": "12012",
+   "sr28ProteinPer100g": 31.56
+  },
+  "Hot dog, beef": {
+   "ndb": "07945",
+   "sr28ProteinPer100g": 11.69
+  },
+  "Hummus, commercial": {
+   "ndb": "16158",
+   "sr28ProteinPer100g": 7.9
+  },
+  "Kale, raw": {
+   "ndb": "11233",
+   "sr28ProteinPer100g": 4.28
+  },
+  "Kefir, plain, lowfat": {
+   "ndb": "01289",
+   "sr28ProteinPer100g": 3.79
+  },
+  "Kidney beans, cooked": {
+   "ndb": "16033",
+   "sr28ProteinPer100g": 8.67
+  },
+  "Lamb, lean, cooked": {
+   "ndb": "17004",
+   "sr28ProteinPer100g": 28.22
+  },
+  "Lentils, cooked": {
+   "ndb": "16070",
+   "sr28ProteinPer100g": 9.02
+  },
+  "Lentils, dry": {
+   "ndb": "16069",
+   "sr28ProteinPer100g": 24.63
+  },
+  "Lobster, cooked": {
+   "ndb": "15148",
+   "sr28ProteinPer100g": 19.0
+  },
+  "Mackerel, raw": {
+   "ndb": "15046",
+   "sr28ProteinPer100g": 18.6
+  },
+  "Milk, skim": {
+   "ndb": "01085",
+   "sr28ProteinPer100g": 3.37
+  },
+  "Milk, whole (3.25%)": {
+   "ndb": "01211",
+   "sr28ProteinPer100g": 3.15
+  },
+  "Mozzarella, part skim": {
+   "ndb": "01028",
+   "sr28ProteinPer100g": 24.26
+  },
+  "Mozzarella, whole milk": {
+   "ndb": "01026",
+   "sr28ProteinPer100g": 22.17
+  },
+  "Mushrooms, white, raw": {
+   "ndb": "11260",
+   "sr28ProteinPer100g": 3.09
+  },
+  "Mussels, cooked": {
+   "ndb": "15165",
+   "sr28ProteinPer100g": 23.8
+  },
+  "Oatmeal, cooked with water": {
+   "ndb": "08121",
+   "sr28ProteinPer100g": 2.54
+  },
+  "Oats, rolled, dry": {
+   "ndb": "08120",
+   "sr28ProteinPer100g": 13.15
+  },
+  "Octopus, cooked": {
+   "ndb": "15230",
+   "sr28ProteinPer100g": 29.82
+  },
+  "Parmesan, hard": {
+   "ndb": "01033",
+   "sr28ProteinPer100g": 35.75
+  },
+  "Pasta, cooked": {
+   "ndb": "20121",
+   "sr28ProteinPer100g": 5.8
+  },
+  "Pasta, dry": {
+   "ndb": "20120",
+   "sr28ProteinPer100g": 13.04
+  },
+  "Peanut butter, smooth": {
+   "ndb": "16098",
+   "sr28ProteinPer100g": 22.21
+  },
+  "Peanuts, dry-roasted": {
+   "ndb": "16390",
+   "sr28ProteinPer100g": 24.35
+  },
+  "Pistachios, raw": {
+   "ndb": "12151",
+   "sr28ProteinPer100g": 20.16
+  },
+  "Pizza, cheese, regular crust": {
+   "ndb": "21224",
+   "sr28ProteinPer100g": 10.36
+  },
+  "Pork loin, cooked": {
+   "ndb": "10023",
+   "sr28ProteinPer100g": 27.09
+  },
+  "Pork loin, raw": {
+   "ndb": "10024",
+   "sr28ProteinPer100g": 21.43
+  },
+  "Pork sausage, cooked": {
+   "ndb": "07064",
+   "sr28ProteinPer100g": 18.53
+  },
+  "Pork tenderloin, raw": {
+   "ndb": "10060",
+   "sr28ProteinPer100g": 20.95
+  },
+  "Potato, boiled in skin": {
+   "ndb": "11365",
+   "sr28ProteinPer100g": 1.87
+  },
+  "Protein bar, typical": {
+   "ndb": "25067",
+   "sr28ProteinPer100g": 30.34
+  },
+  "Pumpkin seeds": {
+   "ndb": "12014",
+   "sr28ProteinPer100g": 30.23
+  },
+  "Quinoa, cooked": {
+   "ndb": "20137",
+   "sr28ProteinPer100g": 4.4
+  },
+  "Rice, brown, long-grain, cooked": {
+   "ndb": "20037",
+   "sr28ProteinPer100g": 2.74
+  },
+  "Rice, white, long-grain, cooked": {
+   "ndb": "20045",
+   "sr28ProteinPer100g": 2.69
+  },
+  "Ricotta, part skim": {
+   "ndb": "01037",
+   "sr28ProteinPer100g": 11.39
+  },
+  "Salmon, Atlantic, farmed, cooked": {
+   "ndb": "15237",
+   "sr28ProteinPer100g": 22.1
+  },
+  "Salmon, Atlantic, farmed, raw": {
+   "ndb": "15236",
+   "sr28ProteinPer100g": 20.42
+  },
+  "Salmon, smoked": {
+   "ndb": "15077",
+   "sr28ProteinPer100g": 18.28
+  },
+  "Sardines, canned in oil": {
+   "ndb": "15088",
+   "sr28ProteinPer100g": 24.62
+  },
+  "Scallops, raw": {
+   "ndb": "15172",
+   "sr28ProteinPer100g": 12.06
+  },
+  "Shrimp, cooked": {
+   "ndb": "15271",
+   "sr28ProteinPer100g": 23.98
+  },
+  "Shrimp, raw": {
+   "ndb": "15270",
+   "sr28ProteinPer100g": 20.1
+  },
+  "Soy milk, plain, unfortified": {
+   "ndb": "16120",
+   "sr28ProteinPer100g": 3.27
+  },
+  "Soy protein isolate powder": {
+   "ndb": "16122",
+   "sr28ProteinPer100g": 88.32
+  },
+  "Soybeans, cooked": {
+   "ndb": "16109",
+   "sr28ProteinPer100g": 18.21
+  },
+  "Spinach, raw": {
+   "ndb": "11457",
+   "sr28ProteinPer100g": 2.86
+  },
+  "Sunflower seeds": {
+   "ndb": "12036",
+   "sr28ProteinPer100g": 20.78
+  },
+  "Sweet corn, cooked": {
+   "ndb": "11168",
+   "sr28ProteinPer100g": 3.41
+  },
+  "Sweet potato, baked": {
+   "ndb": "11508",
+   "sr28ProteinPer100g": 2.01
+  },
+  "Swiss cheese": {
+   "ndb": "01040",
+   "sr28ProteinPer100g": 26.96
+  },
+  "Tempeh": {
+   "ndb": "16114",
+   "sr28ProteinPer100g": 20.29
+  },
+  "Tilapia, raw": {
+   "ndb": "15261",
+   "sr28ProteinPer100g": 20.08
+  },
+  "Tofu, firm": {
+   "ndb": "16281",
+   "sr28ProteinPer100g": 10.92
+  },
+  "Tofu, silken": {
+   "ndb": "16278",
+   "sr28ProteinPer100g": 4.82
+  },
+  "Tortilla, flour": {
+   "ndb": "18364",
+   "sr28ProteinPer100g": 8.2
+  },
+  "Trout, raw": {
+   "ndb": "15114",
+   "sr28ProteinPer100g": 20.77
+  },
+  "Tuna, light, canned in water": {
+   "ndb": "15121",
+   "sr28ProteinPer100g": 19.44
+  },
+  "Tuna, white (albacore), canned in water": {
+   "ndb": "15126",
+   "sr28ProteinPer100g": 23.62
+  },
+  "Tuna, yellowfin, raw": {
+   "ndb": "15127",
+   "sr28ProteinPer100g": 24.4
+  },
+  "Turkey breast, cooked": {
+   "ndb": "05733",
+   "sr28ProteinPer100g": 29.01
+  },
+  "Turkey breast, raw": {
+   "ndb": "05219",
+   "sr28ProteinPer100g": 23.66
+  },
+  "Turkey, deli slices": {
+   "ndb": "07081",
+   "sr28ProteinPer100g": 16.33
+  },
+  "Venison, cooked": {
+   "ndb": "17165",
+   "sr28ProteinPer100g": 30.21
+  },
+  "Walnuts": {
+   "ndb": "12155",
+   "sr28ProteinPer100g": 15.23
+  },
+  "Yogurt, plain, whole milk": {
+   "ndb": "01116",
+   "sr28ProteinPer100g": 3.47
+  }
+ }
+}

@@ -6,6 +6,9 @@
  * Covers the search combobox, unit conversion, per-row and total protein math,
  * the daily-target bar, localStorage round-tripping, USDA response parsing,
  * and HTML escaping of food names coming from the API.
+ *
+ * Also asserts every built-in protein value still matches the USDA SR28 record
+ * pinned for it in sources.json, so editing a number by hand fails the suite.
  */
 import { JSDOM } from "jsdom";
 import fs from "fs";
@@ -55,7 +58,7 @@ const sel = tr.querySelector("select");
 check("steak has no named units, defaults to 100 g", sel.value === "g" && cells(tr)[1] === "");
 type(tr.querySelector("input[type=number]"), "300");
 tr = rows()[1];
-check("300 g steak = 66.0 g protein", cells(tr)[4] === "66.0 g", `got ${cells(tr)[4]}`);
+check("300 g steak = 65.7 g protein", cells(tr)[4] === "65.7 g", `got ${cells(tr)[4]}`);
 
 // --- unit switching ---
 type($("search"), "almond");
@@ -72,7 +75,7 @@ tr = rows()[2];
 check("switching to oz recomputes grams (28.35 g displays as 28)", cells(tr)[3] === "28 g", `got ${cells(tr)[3]}`);
 
 // --- total ---
-const expected = 18.9 + 66.0 + 28.3495 * 0.212;
+const expected = 18.9 + 65.7 + 28.3495 * 0.212;
 check("total sums all rows", Math.abs(totalProtein() - expected) < 0.06, `total=${totalProtein()} expected≈${expected.toFixed(1)}`);
 
 // --- target + progress bar ---
@@ -144,6 +147,55 @@ window.renderUsdaResults(evil.foods.map(f => ({ raw: f, p: window.usdaProtein(f)
 const evilRow = [...$("usda-results").querySelectorAll(".ur")][0];
 check("hostile name is escaped, not parsed as HTML",
   !evilRow.querySelector("img") && window.__pwned === undefined && evilRow.querySelector(".name").textContent.includes("<img"));
+
+
+// --- food database integrity ---
+const dbSrc = html.slice(html.indexOf("const FOODS"), html.indexOf("/* ====", html.indexOf("const FOODS")));
+const FOODS = window.eval(dbSrc + "\nFOODS");
+const sources = JSON.parse(fs.readFileSync(new URL("sources.json", import.meta.url), "utf8"));
+check("database has 130 foods", FOODS.length === 130, `${FOODS.length}`);
+check("no duplicate food names", new Set(FOODS.map(f => f.name)).size === FOODS.length);
+
+let drift = [];
+for (const f of FOODS) {
+  const ref = sources.foods[f.name];
+  if (!ref) { if (!f.est) drift.push(`${f.name}: no source and not marked est`); continue; }
+  if (f.est) drift.push(`${f.name}: marked est but has a USDA source`);
+  // index.html stores one decimal, so it must agree to within half a decimal place.
+  // Anything further off means a value was edited away from its source.
+  if (Math.abs(f.p - ref.sr28ProteinPer100g) > 0.05 + 1e-9)
+    drift.push(`${f.name}: ${f.p} != SR28 ${ref.sr28ProteinPer100g} (NDB ${ref.ndb})`);
+}
+check("every protein value matches its pinned USDA SR28 record", drift.length === 0, drift.slice(0,4).join("; "));
+check("119 foods are USDA-sourced, 11 label-derived",
+  FOODS.filter(f => !f.est).length === 119 && FOODS.filter(f => f.est).length === 11,
+  `${FOODS.filter(f => !f.est).length}/${FOODS.filter(f => f.est).length}`);
+
+const badUnit = [];
+for (const f of FOODS) {
+  if (!(f.p >= 0 && f.p <= 95)) badUnit.push(`${f.name}: implausible p=${f.p}`);
+  if (!f.name || !f.group) badUnit.push(`${f.name}: missing field`);
+  for (const [n, g] of f.units || []) {
+    if (typeof n !== "string" || !(g > 0)) badUnit.push(`${f.name}: bad unit ${n}=${g}`);
+    if (n === "g" || n === "oz") badUnit.push(`${f.name}: redefines base unit ${n}`);
+  }
+  const names = (f.units || []).map(u => u[0]);
+  if (new Set(names).size !== names.length) badUnit.push(`${f.name}: duplicate unit name`);
+}
+check("all units well-formed and non-conflicting", badUnit.length === 0, badUnit.slice(0,4).join("; "));
+
+// --- label-derived rows are visibly marked ---
+type($("search"), "whey isolate");
+check("label-only row marked with ≈ in dropdown",
+  $("results").querySelector(".result .val").textContent.startsWith("≈"),
+  $("results").querySelector(".result .val").textContent);
+mousedown($("results").querySelector(".result"));
+check("label-only row explains itself in the table",
+  /product labels/.test(cells(rows().at(-1))[0]), cells(rows().at(-1))[0]);
+type($("search"), "egg, whole");
+check("USDA-sourced row has no ≈ marker",
+  !$("results").querySelector(".result .val").textContent.startsWith("≈"),
+  $("results").querySelector(".result .val").textContent);
 
 console.log("\n" + (fail ? fail + " FAILURE(S)" : "all checks passed"));
 process.exit(fail ? 1 : 0);

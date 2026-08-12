@@ -257,8 +257,12 @@
   </div>
 
   <p class="foot">
-    Protein values are per 100&nbsp;g, mostly from USDA FoodData Central.
-    Raw vs. cooked matters — cooked meat is denser in protein because it lost water.
+    119 of the 130 built-in foods take their protein figure straight from USDA Standard
+    Reference 28, the dataset FoodData Central serves as “SR&nbsp;Legacy”; each row carries its
+    NDB&nbsp;id in a comment so it can be re-checked. The 11 marked&nbsp;≈ have no USDA entry and
+    come from product labels — check your own tub, especially for protein powders.<br>
+    Raw vs.&nbsp;cooked matters: cooked meat lost water, so it is denser in protein.
+    Weigh your food the same way the row is labelled.
   </p>
 </div>
 
@@ -267,155 +271,167 @@
 
 /* ============================================================
    FOOD DATABASE
-   proteinPer100g: grams of protein in 100 g of the food.
-   units: household portions, each expressed in grams.
-          "g" and "oz" are added automatically to every food.
+
+   p     = grams of protein per 100 g of the food.
+   units = household portions, each expressed in grams.
+           "g" and "oz" are added to every food automatically,
+           and all arithmetic converts to grams first.
+
+   Every value tagged "SR28 <id>" is the protein figure from that
+   record in USDA Standard Reference 28 — the dataset FoodData
+   Central serves as "SR Legacy" for generic foods — rounded to one
+   decimal. The id is the NDB number, so any row can be re-checked
+   against the source. Household gram weights come from the same
+   record's own measures where SR28 defines one.
+
+   Values tagged "label" have no USDA equivalent (skyr, quark,
+   halloumi, seitan, oat milk, protein powders). They are typical
+   product-label figures and are the least reliable rows here —
+   powders in particular vary by 10 g/100 g between brands, so
+   prefer the number on your own tub.
+
+   Raw vs. cooked is not cosmetic: cooked meat lost water, so it is
+   denser in protein. Pick the row that matches how you weighed it.
    ============================================================ */
 const FOODS = [
   // ---- Eggs & dairy ----
-  { name: "Egg, whole, raw",              group: "Eggs & dairy", p: 12.6, units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },
-  { name: "Egg white, raw",               group: "Eggs & dairy", p: 10.9, units: [["large egg white", 33]] },
-  { name: "Egg yolk, raw",                group: "Eggs & dairy", p: 15.9, units: [["large yolk", 17]] },
-  { name: "Milk, whole (3.25%)",          group: "Eggs & dairy", p: 3.3,  units: [["cup", 244], ["ml", 1.03]] },
-  { name: "Milk, skim",                   group: "Eggs & dairy", p: 3.4,  units: [["cup", 245], ["ml", 1.03]] },
-  { name: "Greek yogurt, plain, nonfat",  group: "Eggs & dairy", p: 10.3, units: [["cup", 245], ["170 g tub", 170]] },
-  { name: "Greek yogurt, plain, whole",   group: "Eggs & dairy", p: 8.8,  units: [["cup", 245], ["170 g tub", 170]] },
-  { name: "Skyr, plain",                  group: "Eggs & dairy", p: 11.0, units: [["150 g tub", 150]] },
-  { name: "Yogurt, plain, whole milk",    group: "Eggs & dairy", p: 3.5,  units: [["cup", 245]] },
-  { name: "Kefir, plain",                 group: "Eggs & dairy", p: 3.3,  units: [["cup", 243], ["ml", 1.03]] },
-  { name: "Cottage cheese, 2%",           group: "Eggs & dairy", p: 11.8, units: [["cup", 226]] },
-  { name: "Cottage cheese, 4%",           group: "Eggs & dairy", p: 11.1, units: [["cup", 226]] },
-  { name: "Quark, plain, low fat",        group: "Eggs & dairy", p: 12.0, units: [["250 g tub", 250]] },
-  { name: "Ricotta, part skim",           group: "Eggs & dairy", p: 11.4, units: [["cup", 246]] },
-  { name: "Cheddar cheese",               group: "Eggs & dairy", p: 24.9, units: [["slice", 28]] },
-  { name: "Mozzarella, part skim",        group: "Eggs & dairy", p: 24.3, units: [["slice", 28]] },
-  { name: "Mozzarella, fresh",            group: "Eggs & dairy", p: 17.9, units: [["ball", 125]] },
-  { name: "Parmesan, grated",             group: "Eggs & dairy", p: 35.8, units: [["tbsp", 5]] },
-  { name: "Swiss cheese",                 group: "Eggs & dairy", p: 26.9, units: [["slice", 28]] },
-  { name: "Gouda cheese",                 group: "Eggs & dairy", p: 24.9, units: [["slice", 28]] },
-  { name: "Feta cheese",                  group: "Eggs & dairy", p: 14.2, units: [["cup, crumbled", 150]] },
-  { name: "Halloumi",                     group: "Eggs & dairy", p: 22.0, units: [["slice", 30]] },
-  { name: "Goat cheese, soft",            group: "Eggs & dairy", p: 18.5, units: [] },
-  { name: "Cream cheese",                 group: "Eggs & dairy", p: 5.9,  units: [["tbsp", 15]] },
-
+  { name: "Egg, whole, raw", group: "Eggs & dairy", p: 12.6, units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },  // SR28 01123
+  { name: "Egg white, raw", group: "Eggs & dairy", p: 10.9, units: [["large egg white", 33]] },  // SR28 01124
+  { name: "Egg yolk, raw", group: "Eggs & dairy", p: 15.9, units: [["large yolk", 17]] },  // SR28 01125
+  { name: "Milk, whole (3.25%)", group: "Eggs & dairy", p: 3.1, units: [["cup", 244], ["ml", 1.03]] },  // SR28 01211
+  { name: "Milk, skim", group: "Eggs & dairy", p: 3.4, units: [["cup", 245], ["ml", 1.03]] },  // SR28 01085
+  { name: "Greek yogurt, plain, nonfat", group: "Eggs & dairy", p: 10.2, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01256
+  { name: "Greek yogurt, plain, whole", group: "Eggs & dairy", p: 9, units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01293
+  { name: "Skyr, plain", group: "Eggs & dairy", p: 11, est: 1, units: [["150 g tub", 150]] },  // label
+  { name: "Yogurt, plain, whole milk", group: "Eggs & dairy", p: 3.5, units: [["cup", 245]] },  // SR28 01116
+  { name: "Kefir, plain, lowfat", group: "Eggs & dairy", p: 3.8, units: [["cup", 243], ["ml", 1.03]] },  // SR28 01289
+  { name: "Cottage cheese, 2%", group: "Eggs & dairy", p: 10.4, units: [["cup", 226]] },  // SR28 01015
+  { name: "Cottage cheese, 4%", group: "Eggs & dairy", p: 11.1, units: [["cup", 226]] },  // SR28 01012
+  { name: "Quark, plain, low fat", group: "Eggs & dairy", p: 12, est: 1, units: [["250 g tub", 250]] },  // label
+  { name: "Ricotta, part skim", group: "Eggs & dairy", p: 11.4, units: [["cup", 246]] },  // SR28 01037
+  { name: "Cheddar cheese", group: "Eggs & dairy", p: 22.9, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01009
+  { name: "Mozzarella, part skim", group: "Eggs & dairy", p: 24.3, units: [["slice", 28], ["cup, shredded", 113]] },  // SR28 01028
+  { name: "Mozzarella, whole milk", group: "Eggs & dairy", p: 22.2, units: [["slice", 28], ["cup, shredded", 112]] },  // SR28 01026
+  { name: "Parmesan, hard", group: "Eggs & dairy", p: 35.8, units: [["tbsp, grated", 5]] },  // SR28 01033
+  { name: "Swiss cheese", group: "Eggs & dairy", p: 27, units: [["slice", 28]] },  // SR28 01040
+  { name: "Gouda cheese", group: "Eggs & dairy", p: 24.9, units: [["slice", 28]] },  // SR28 01022
+  { name: "Feta cheese", group: "Eggs & dairy", p: 14.2, units: [["cup, crumbled", 150]] },  // SR28 01019
+  { name: "Halloumi", group: "Eggs & dairy", p: 22, est: 1, units: [["slice", 30]] },  // label
+  { name: "Goat cheese, soft", group: "Eggs & dairy", p: 18.5, units: [] },  // SR28 01159
+  { name: "Cream cheese", group: "Eggs & dairy", p: 6.2, units: [["tbsp", 15]] },  // SR28 01017
   // ---- Poultry & meat ----
-  { name: "Chicken breast, skinless, raw",    group: "Poultry & meat", p: 22.5, units: [["breast", 174]] },
-  { name: "Chicken breast, skinless, cooked", group: "Poultry & meat", p: 31.0, units: [["breast", 120]] },
-  { name: "Chicken thigh, skinless, cooked",  group: "Poultry & meat", p: 25.9, units: [["thigh", 75]] },
-  { name: "Chicken, rotisserie, meat only",   group: "Poultry & meat", p: 27.0, units: [] },
-  { name: "Turkey breast, raw",               group: "Poultry & meat", p: 23.7, units: [] },
-  { name: "Turkey breast, cooked",            group: "Poultry & meat", p: 29.0, units: [] },
-  { name: "Turkey, deli slices",              group: "Poultry & meat", p: 17.0, units: [["slice", 28]] },
-  { name: "Beef steak, lean (sirloin), raw",    group: "Poultry & meat", p: 22.0, units: [] },
-  { name: "Beef steak, lean (sirloin), cooked", group: "Poultry & meat", p: 29.0, units: [] },
-  { name: "Beef, ribeye, cooked",              group: "Poultry & meat", p: 24.0, units: [] },
-  { name: "Ground beef, 90% lean, raw",        group: "Poultry & meat", p: 20.0, units: [] },
-  { name: "Ground beef, 90% lean, cooked",     group: "Poultry & meat", p: 26.0, units: [] },
-  { name: "Beef jerky",                        group: "Poultry & meat", p: 33.2, units: [["28 g bag", 28]] },
-  { name: "Beef liver, cooked",                group: "Poultry & meat", p: 20.4, units: [] },
-  { name: "Pork loin, raw",                    group: "Poultry & meat", p: 21.0, units: [] },
-  { name: "Pork loin, cooked",                 group: "Poultry & meat", p: 27.0, units: [] },
-  { name: "Pork tenderloin, raw",              group: "Poultry & meat", p: 20.9, units: [] },
-  { name: "Ham, lean",                         group: "Poultry & meat", p: 20.9, units: [["slice", 28]] },
-  { name: "Bacon, cooked",                     group: "Poultry & meat", p: 37.0, units: [["slice", 8]] },
-  { name: "Pork sausage, cooked",              group: "Poultry & meat", p: 16.0, units: [["link", 68]] },
-  { name: "Hot dog, beef",                     group: "Poultry & meat", p: 11.7, units: [["hot dog", 52]] },
-  { name: "Lamb, lean, cooked",                group: "Poultry & meat", p: 25.6, units: [] },
-  { name: "Duck breast, skinless, cooked",     group: "Poultry & meat", p: 23.5, units: [] },
-  { name: "Venison, cooked",                   group: "Poultry & meat", p: 30.0, units: [] },
-
+  { name: "Chicken breast, skinless, raw", group: "Poultry & meat", p: 22.5, units: [["breast", 272]] },  // SR28 05062
+  { name: "Chicken breast, skinless, cooked", group: "Poultry & meat", p: 30.5, units: [["breast", 196]] },  // SR28 05747
+  { name: "Chicken thigh, skinless, cooked", group: "Poultry & meat", p: 24.8, units: [["thigh", 116]] },  // SR28 05098
+  { name: "Chicken, rotisserie, breast meat", group: "Poultry & meat", p: 28, units: [] },  // SR28 05000
+  { name: "Turkey breast, raw", group: "Poultry & meat", p: 23.7, units: [] },  // SR28 05219
+  { name: "Turkey breast, cooked", group: "Poultry & meat", p: 29, units: [] },  // SR28 05733
+  { name: "Turkey, deli slices", group: "Poultry & meat", p: 16.3, units: [["slice", 15]] },  // SR28 07081
+  { name: "Beef steak, lean (sirloin), raw", group: "Poultry & meat", p: 21.9, units: [] },  // SR28 23625
+  { name: "Beef steak, lean (sirloin), cooked", group: "Poultry & meat", p: 30.3, units: [] },  // SR28 13455
+  { name: "Beef, ribeye, cooked", group: "Poultry & meat", p: 26.6, units: [] },  // SR28 13096
+  { name: "Ground beef, 90% lean, raw", group: "Poultry & meat", p: 20, units: [] },  // SR28 23562
+  { name: "Ground beef, 90% lean, cooked", group: "Poultry & meat", p: 26.1, units: [] },  // SR28 23563
+  { name: "Beef jerky", group: "Poultry & meat", p: 33.2, units: [["28 g bag", 28]] },  // SR28 19002
+  { name: "Beef liver, cooked", group: "Poultry & meat", p: 29.1, units: [] },  // SR28 13326
+  { name: "Pork loin, raw", group: "Poultry & meat", p: 21.4, units: [] },  // SR28 10024
+  { name: "Pork loin, cooked", group: "Poultry & meat", p: 27.1, units: [] },  // SR28 10023
+  { name: "Pork tenderloin, raw", group: "Poultry & meat", p: 20.9, units: [] },  // SR28 10060
+  { name: "Ham, cured, lean", group: "Poultry & meat", p: 18.3, units: [["slice (1 oz)", 28], ["cup, diced", 140]] },  // SR28 10182
+  { name: "Bacon, cooked", group: "Poultry & meat", p: 33.9, units: [["slice", 11.5]] },  // SR28 10862
+  { name: "Pork sausage, cooked", group: "Poultry & meat", p: 18.5, units: [["link", 23], ["patty", 27]] },  // SR28 07064
+  { name: "Hot dog, beef", group: "Poultry & meat", p: 11.7, units: [["frankfurter", 48]] },  // SR28 07945
+  { name: "Lamb, lean, cooked", group: "Poultry & meat", p: 28.2, units: [] },  // SR28 17004
+  { name: "Duck breast, skinless, cooked", group: "Poultry & meat", p: 27.6, units: [] },  // SR28 05316
+  { name: "Venison, cooked", group: "Poultry & meat", p: 30.2, units: [] },  // SR28 17165
   // ---- Fish & seafood ----
-  { name: "Salmon, farmed, raw",          group: "Fish & seafood", p: 20.4, units: [["fillet", 170]] },
-  { name: "Salmon, farmed, cooked",       group: "Fish & seafood", p: 25.4, units: [["fillet", 145]] },
-  { name: "Salmon, smoked",               group: "Fish & seafood", p: 18.3, units: [["100 g pack", 100]] },
-  { name: "Tuna, canned in water",        group: "Fish & seafood", p: 23.6, units: [["can, drained", 142]] },
-  { name: "Tuna steak, raw",              group: "Fish & seafood", p: 23.3, units: [] },
-  { name: "Cod, raw",                     group: "Fish & seafood", p: 17.8, units: [["fillet", 180]] },
-  { name: "Cod, cooked",                  group: "Fish & seafood", p: 22.8, units: [] },
-  { name: "Tilapia, raw",                 group: "Fish & seafood", p: 20.1, units: [["fillet", 116]] },
-  { name: "Trout, raw",                   group: "Fish & seafood", p: 20.5, units: [] },
-  { name: "Mackerel, raw",                group: "Fish & seafood", p: 18.6, units: [] },
-  { name: "Sardines, canned in oil",      group: "Fish & seafood", p: 24.6, units: [["can, drained", 92]] },
-  { name: "Shrimp, raw",                  group: "Fish & seafood", p: 20.1, units: [["shrimp, large", 15]] },
-  { name: "Shrimp, cooked",               group: "Fish & seafood", p: 24.0, units: [["shrimp, large", 11]] },
-  { name: "Crab meat, cooked",            group: "Fish & seafood", p: 18.1, units: [] },
-  { name: "Lobster, cooked",              group: "Fish & seafood", p: 16.5, units: [] },
-  { name: "Scallops, raw",                group: "Fish & seafood", p: 16.8, units: [] },
-  { name: "Mussels, cooked",              group: "Fish & seafood", p: 11.9, units: [] },
-  { name: "Octopus, cooked",              group: "Fish & seafood", p: 29.8, units: [] },
-
-  // ---- Protein supplements ----
-  { name: "Whey protein isolate powder",  group: "Supplements", p: 85.0, units: [["scoop (30 g)", 30]] },
-  { name: "Whey protein concentrate powder", group: "Supplements", p: 80.0, units: [["scoop (30 g)", 30]] },
-  { name: "Casein protein powder",        group: "Supplements", p: 78.0, units: [["scoop (30 g)", 30]] },
-  { name: "Pea protein powder",           group: "Supplements", p: 80.0, units: [["scoop (30 g)", 30]] },
-  { name: "Soy protein isolate powder",   group: "Supplements", p: 88.0, units: [["scoop (30 g)", 30]] },
-  { name: "Collagen peptides",            group: "Supplements", p: 90.0, units: [["scoop (20 g)", 20]] },
-  { name: "Protein bar, typical",         group: "Supplements", p: 30.0, units: [["bar", 60]] },
-  { name: "Nutritional yeast",            group: "Supplements", p: 45.0, units: [["tbsp", 5]] },
-
+  { name: "Salmon, Atlantic, farmed, raw", group: "Fish & seafood", p: 20.4, units: [["half fillet", 198]] },  // SR28 15236
+  { name: "Salmon, Atlantic, farmed, cooked", group: "Fish & seafood", p: 22.1, units: [["half fillet", 178]] },  // SR28 15237
+  { name: "Salmon, smoked", group: "Fish & seafood", p: 18.3, units: [["100 g pack", 100]] },  // SR28 15077
+  { name: "Tuna, white (albacore), canned in water", group: "Fish & seafood", p: 23.6, units: [["can (5 oz), drained", 142]] },  // SR28 15126
+  { name: "Tuna, light, canned in water", group: "Fish & seafood", p: 19.4, units: [["can (5 oz), drained", 142]] },  // SR28 15121
+  { name: "Tuna, yellowfin, raw", group: "Fish & seafood", p: 24.4, units: [] },  // SR28 15127
+  { name: "Cod, raw", group: "Fish & seafood", p: 17.8, units: [["fillet", 231]] },  // SR28 15015
+  { name: "Cod, cooked", group: "Fish & seafood", p: 22.8, units: [] },  // SR28 15016
+  { name: "Tilapia, raw", group: "Fish & seafood", p: 20.1, units: [["fillet", 116]] },  // SR28 15261
+  { name: "Trout, raw", group: "Fish & seafood", p: 20.8, units: [] },  // SR28 15114
+  { name: "Mackerel, raw", group: "Fish & seafood", p: 18.6, units: [] },  // SR28 15046
+  { name: "Sardines, canned in oil", group: "Fish & seafood", p: 24.6, units: [["can (3.75 oz), drained", 92]] },  // SR28 15088
+  { name: "Shrimp, raw", group: "Fish & seafood", p: 20.1, units: [["shrimp, large", 15]] },  // SR28 15270
+  { name: "Shrimp, cooked", group: "Fish & seafood", p: 24, units: [["shrimp, large", 11]] },  // SR28 15271
+  { name: "Crab, blue, cooked", group: "Fish & seafood", p: 17.9, units: [] },  // SR28 15140
+  { name: "Lobster, cooked", group: "Fish & seafood", p: 19, units: [] },  // SR28 15148
+  { name: "Scallops, raw", group: "Fish & seafood", p: 12.1, units: [] },  // SR28 15172
+  { name: "Mussels, cooked", group: "Fish & seafood", p: 23.8, units: [] },  // SR28 15165
+  { name: "Octopus, cooked", group: "Fish & seafood", p: 29.8, units: [] },  // SR28 15230
+  // ---- Supplements ----
+  { name: "Whey protein isolate powder", group: "Supplements", p: 85, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Whey protein concentrate powder", group: "Supplements", p: 80, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Casein protein powder", group: "Supplements", p: 75, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Pea protein powder", group: "Supplements", p: 80, est: 1, units: [["scoop (30 g)", 30]] },  // label
+  { name: "Soy protein isolate powder", group: "Supplements", p: 88.3, units: [["scoop (30 g)", 30]] },  // SR28 16122
+  { name: "Collagen peptides", group: "Supplements", p: 90, est: 1, units: [["scoop (20 g)", 20]] },  // label
+  { name: "Protein bar, typical", group: "Supplements", p: 30.3, units: [["bar", 60]] },  // SR28 25067
+  { name: "Nutritional yeast", group: "Supplements", p: 50, est: 1, units: [["tbsp", 5]] },  // label
   // ---- Plant protein ----
-  { name: "Tofu, firm",                   group: "Plant protein", p: 17.3, units: [["block", 396], ["1/2 cup", 126]] },
-  { name: "Tofu, silken",                 group: "Plant protein", p: 5.0,  units: [["1/2 cup", 116]] },
-  { name: "Tempeh",                       group: "Plant protein", p: 20.3, units: [["1/2 cup", 83]] },
-  { name: "Seitan",                       group: "Plant protein", p: 25.0, units: [] },
-  { name: "Edamame, shelled, cooked",     group: "Plant protein", p: 11.9, units: [["cup", 155]] },
-  { name: "Soybeans, cooked",             group: "Plant protein", p: 16.6, units: [["cup", 172]] },
-  { name: "Lentils, cooked",              group: "Plant protein", p: 9.0,  units: [["cup", 198]] },
-  { name: "Lentils, dry",                 group: "Plant protein", p: 25.0, units: [["cup", 192]] },
-  { name: "Chickpeas, cooked",            group: "Plant protein", p: 8.9,  units: [["cup", 164]] },
-  { name: "Chickpeas, canned, drained",   group: "Plant protein", p: 7.1,  units: [["can, drained", 240]] },
-  { name: "Black beans, cooked",          group: "Plant protein", p: 8.9,  units: [["cup", 172]] },
-  { name: "Kidney beans, cooked",         group: "Plant protein", p: 8.7,  units: [["cup", 177]] },
-  { name: "Hummus",                       group: "Plant protein", p: 7.9,  units: [["tbsp", 15]] },
-  { name: "Soy milk, unsweetened",        group: "Plant protein", p: 3.3,  units: [["cup", 243], ["ml", 1.03]] },
-  { name: "Oat milk",                     group: "Plant protein", p: 1.0,  units: [["cup", 240], ["ml", 1.0]] },
-  { name: "Almond milk, unsweetened",     group: "Plant protein", p: 0.5,  units: [["cup", 240], ["ml", 1.0]] },
-
+  { name: "Tofu, firm", group: "Plant protein", p: 10.9, units: [["block (14 oz)", 396], ["1/2 cup", 126]] },  // SR28 16281
+  { name: "Tofu, silken", group: "Plant protein", p: 4.8, units: [["1/2 cup", 116]] },  // SR28 16278
+  { name: "Tempeh", group: "Plant protein", p: 20.3, units: [["1/2 cup", 83]] },  // SR28 16114
+  { name: "Seitan", group: "Plant protein", p: 21, est: 1, units: [] },  // label
+  { name: "Edamame, shelled, cooked", group: "Plant protein", p: 11.9, units: [["cup", 155]] },  // SR28 11212
+  { name: "Soybeans, cooked", group: "Plant protein", p: 18.2, units: [["cup", 172]] },  // SR28 16109
+  { name: "Lentils, cooked", group: "Plant protein", p: 9, units: [["cup", 198]] },  // SR28 16070
+  { name: "Lentils, dry", group: "Plant protein", p: 24.6, units: [["cup", 192]] },  // SR28 16069
+  { name: "Chickpeas, cooked", group: "Plant protein", p: 8.9, units: [["cup", 164]] },  // SR28 16057
+  { name: "Chickpeas, canned, drained", group: "Plant protein", p: 7, units: [["can, drained", 240]] },  // SR28 16358
+  { name: "Black beans, cooked", group: "Plant protein", p: 8.9, units: [["cup", 172]] },  // SR28 16015
+  { name: "Kidney beans, cooked", group: "Plant protein", p: 8.7, units: [["cup", 177]] },  // SR28 16033
+  { name: "Hummus, commercial", group: "Plant protein", p: 7.9, units: [["tbsp", 15]] },  // SR28 16158
+  { name: "Soy milk, plain, unfortified", group: "Plant protein", p: 3.3, units: [["cup", 243], ["ml", 1.03]] },  // SR28 16120
+  { name: "Oat milk", group: "Plant protein", p: 0.4, est: 1, units: [["cup", 240], ["ml", 1]] },  // label
+  { name: "Almond milk, unsweetened", group: "Plant protein", p: 0.6, units: [["cup", 240], ["ml", 1]] },  // SR28 14091
   // ---- Nuts & seeds ----
-  { name: "Peanut butter",                group: "Nuts & seeds", p: 22.5, units: [["tbsp", 16]] },
-  { name: "Peanuts, roasted",             group: "Nuts & seeds", p: 25.8, units: [["handful (28 g)", 28]] },
-  { name: "Almonds",                      group: "Nuts & seeds", p: 21.2, units: [["handful (28 g)", 28], ["almond", 1.2]] },
-  { name: "Cashews",                      group: "Nuts & seeds", p: 18.2, units: [["handful (28 g)", 28]] },
-  { name: "Walnuts",                      group: "Nuts & seeds", p: 15.2, units: [["handful (28 g)", 28]] },
-  { name: "Pistachios, shelled",          group: "Nuts & seeds", p: 20.2, units: [["handful (28 g)", 28]] },
-  { name: "Pumpkin seeds",                group: "Nuts & seeds", p: 30.2, units: [["handful (28 g)", 28]] },
-  { name: "Sunflower seeds",              group: "Nuts & seeds", p: 20.8, units: [["handful (28 g)", 28]] },
-  { name: "Chia seeds",                   group: "Nuts & seeds", p: 16.5, units: [["tbsp", 12]] },
-  { name: "Hemp seeds, hulled",           group: "Nuts & seeds", p: 31.6, units: [["tbsp", 10]] },
-  { name: "Flaxseed, ground",             group: "Nuts & seeds", p: 18.3, units: [["tbsp", 7]] },
-
+  { name: "Peanut butter, smooth", group: "Nuts & seeds", p: 22.2, units: [["tbsp", 16]] },  // SR28 16098
+  { name: "Peanuts, dry-roasted", group: "Nuts & seeds", p: 24.4, units: [["handful (28 g)", 28]] },  // SR28 16390
+  { name: "Almonds", group: "Nuts & seeds", p: 21.1, units: [["handful (28 g)", 28], ["almond", 1.2]] },  // SR28 12061
+  { name: "Cashews, raw", group: "Nuts & seeds", p: 18.2, units: [["handful (28 g)", 28]] },  // SR28 12087
+  { name: "Walnuts", group: "Nuts & seeds", p: 15.2, units: [["handful (28 g)", 28]] },  // SR28 12155
+  { name: "Pistachios, raw", group: "Nuts & seeds", p: 20.2, units: [["handful (28 g)", 28]] },  // SR28 12151
+  { name: "Pumpkin seeds", group: "Nuts & seeds", p: 30.2, units: [["handful (28 g)", 28]] },  // SR28 12014
+  { name: "Sunflower seeds", group: "Nuts & seeds", p: 20.8, units: [["handful (28 g)", 28]] },  // SR28 12036
+  { name: "Chia seeds", group: "Nuts & seeds", p: 16.5, units: [["tbsp", 12]] },  // SR28 12006
+  { name: "Hemp seeds, hulled", group: "Nuts & seeds", p: 31.6, units: [["tbsp", 10]] },  // SR28 12012
+  { name: "Flaxseed, ground", group: "Nuts & seeds", p: 18.3, units: [["tbsp", 7]] },  // SR28 12220
   // ---- Grains & starches ----
-  { name: "Oats, rolled, dry",            group: "Grains & starches", p: 13.2, units: [["1/2 cup (40 g)", 40]] },
-  { name: "Oatmeal, cooked with water",   group: "Grains & starches", p: 2.4,  units: [["cup", 234]] },
-  { name: "Bread, whole wheat",           group: "Grains & starches", p: 12.3, units: [["slice", 32]] },
-  { name: "Bread, white",                 group: "Grains & starches", p: 9.0,  units: [["slice", 29]] },
-  { name: "Tortilla, flour",              group: "Grains & starches", p: 8.4,  units: [["tortilla", 45]] },
-  { name: "Rice, white, cooked",          group: "Grains & starches", p: 2.7,  units: [["cup", 186]] },
-  { name: "Rice, brown, cooked",          group: "Grains & starches", p: 2.6,  units: [["cup", 195]] },
-  { name: "Pasta, cooked",                group: "Grains & starches", p: 5.8,  units: [["cup", 140]] },
-  { name: "Pasta, dry",                   group: "Grains & starches", p: 13.0, units: [["portion (80 g)", 80]] },
-  { name: "Quinoa, cooked",               group: "Grains & starches", p: 4.4,  units: [["cup", 185]] },
-  { name: "Couscous, cooked",             group: "Grains & starches", p: 3.8,  units: [["cup", 157]] },
-  { name: "Bulgur, cooked",               group: "Grains & starches", p: 3.1,  units: [["cup", 182]] },
-  { name: "Buckwheat, cooked",            group: "Grains & starches", p: 3.4,  units: [["cup", 168]] },
-  { name: "Potato, boiled",               group: "Grains & starches", p: 2.0,  units: [["medium potato", 173]] },
-  { name: "Sweet potato, baked",          group: "Grains & starches", p: 2.0,  units: [["medium potato", 151]] },
-  { name: "Pizza, cheese",                group: "Grains & starches", p: 11.0, units: [["slice", 107]] },
-
+  { name: "Oats, rolled, dry", group: "Grains & starches", p: 13.2, units: [["1/2 cup (40 g)", 40]] },  // SR28 08120
+  { name: "Oatmeal, cooked with water", group: "Grains & starches", p: 2.5, units: [["cup", 234]] },  // SR28 08121
+  { name: "Bread, whole wheat", group: "Grains & starches", p: 12.4, units: [["slice", 32]] },  // SR28 18075
+  { name: "Bread, white", group: "Grains & starches", p: 8.8, units: [["slice", 29]] },  // SR28 18069
+  { name: "Tortilla, flour", group: "Grains & starches", p: 8.2, units: [["tortilla", 45]] },  // SR28 18364
+  { name: "Rice, white, long-grain, cooked", group: "Grains & starches", p: 2.7, units: [["cup", 158]] },  // SR28 20045
+  { name: "Rice, brown, long-grain, cooked", group: "Grains & starches", p: 2.7, units: [["cup", 195]] },  // SR28 20037
+  { name: "Pasta, cooked", group: "Grains & starches", p: 5.8, units: [["cup", 140]] },  // SR28 20121
+  { name: "Pasta, dry", group: "Grains & starches", p: 13, units: [["portion (80 g)", 80]] },  // SR28 20120
+  { name: "Quinoa, cooked", group: "Grains & starches", p: 4.4, units: [["cup", 185]] },  // SR28 20137
+  { name: "Couscous, cooked", group: "Grains & starches", p: 3.8, units: [["cup", 157]] },  // SR28 20029
+  { name: "Bulgur, cooked", group: "Grains & starches", p: 3.1, units: [["cup", 182]] },  // SR28 20013
+  { name: "Buckwheat groats, cooked", group: "Grains & starches", p: 3.4, units: [["cup", 168]] },  // SR28 20010
+  { name: "Potato, boiled in skin", group: "Grains & starches", p: 1.9, units: [["medium potato", 136], ["cup", 156]] },  // SR28 11365
+  { name: "Sweet potato, baked", group: "Grains & starches", p: 2, units: [["medium potato", 114], ["cup", 200]] },  // SR28 11508
+  { name: "Pizza, cheese, regular crust", group: "Grains & starches", p: 10.4, units: [["slice", 81]] },  // SR28 21224
   // ---- Vegetables & fruit ----
-  { name: "Broccoli, raw",                group: "Vegetables & fruit", p: 2.8, units: [["cup, chopped", 91]] },
-  { name: "Spinach, raw",                 group: "Vegetables & fruit", p: 2.9, units: [["cup", 30]] },
-  { name: "Kale, raw",                    group: "Vegetables & fruit", p: 4.3, units: [["cup", 21]] },
-  { name: "Green peas, cooked",           group: "Vegetables & fruit", p: 5.4, units: [["cup", 160]] },
-  { name: "Brussels sprouts, cooked",     group: "Vegetables & fruit", p: 3.4, units: [["cup", 156]] },
-  { name: "Asparagus, cooked",            group: "Vegetables & fruit", p: 2.4, units: [["spear", 20]] },
-  { name: "Mushrooms, white, raw",        group: "Vegetables & fruit", p: 3.1, units: [["cup, sliced", 70]] },
-  { name: "Sweet corn, cooked",           group: "Vegetables & fruit", p: 3.3, units: [["ear", 90]] },
-  { name: "Avocado",                      group: "Vegetables & fruit", p: 2.0, units: [["medium avocado", 150]] },
-  { name: "Banana",                       group: "Vegetables & fruit", p: 1.1, units: [["medium banana", 118]] },
-  { name: "Apple",                        group: "Vegetables & fruit", p: 0.3, units: [["medium apple", 182]] },
-  { name: "Blueberries",                  group: "Vegetables & fruit", p: 0.7, units: [["cup", 148]] },
+  { name: "Broccoli, raw", group: "Vegetables & fruit", p: 2.8, units: [["cup, chopped", 91]] },  // SR28 11090
+  { name: "Spinach, raw", group: "Vegetables & fruit", p: 2.9, units: [["cup", 30]] },  // SR28 11457
+  { name: "Kale, raw", group: "Vegetables & fruit", p: 4.3, units: [["cup", 16]] },  // SR28 11233
+  { name: "Green peas, cooked", group: "Vegetables & fruit", p: 5.4, units: [["cup", 160]] },  // SR28 11305
+  { name: "Brussels sprouts, cooked", group: "Vegetables & fruit", p: 2.5, units: [["cup", 156]] },  // SR28 11099
+  { name: "Asparagus, cooked", group: "Vegetables & fruit", p: 2.4, units: [["spear", 15], ["cup", 180]] },  // SR28 11012
+  { name: "Mushrooms, white, raw", group: "Vegetables & fruit", p: 3.1, units: [["cup, sliced", 70]] },  // SR28 11260
+  { name: "Sweet corn, cooked", group: "Vegetables & fruit", p: 3.4, units: [["ear, medium", 103]] },  // SR28 11168
+  { name: "Avocado", group: "Vegetables & fruit", p: 2, units: [["medium avocado", 136]] },  // SR28 09038
+  { name: "Banana", group: "Vegetables & fruit", p: 1.1, units: [["medium banana", 118]] },  // SR28 09040
+  { name: "Apple, with skin", group: "Vegetables & fruit", p: 0.3, units: [["medium apple", 182]] },  // SR28 09003
+  { name: "Blueberries", group: "Vegetables & fruit", p: 0.7, units: [["cup", 148]] },  // SR28 09050
 ];
 
 /* ============================================================
@@ -599,7 +615,7 @@ function renderResults() {
 
     const val = document.createElement("div");
     val.className = "val";
-    val.textContent = fmt(food.p) + " g";
+    val.textContent = (food.est ? "≈" : "") + fmt(food.p) + " g";
     const per = document.createElement("span");
     per.textContent = " /100 g";
     val.append(per);
@@ -681,7 +697,8 @@ function renderRows() {
     const meta = document.createElement("div");
     meta.className = "fmeta";
     meta.textContent = (entry.food.brand ? entry.food.brand + " · " : "") +
-                       fmt(entry.food.p) + " g protein /100 g";
+                       fmt(entry.food.p) + " g protein /100 g" +
+                       (entry.food.est ? " (from product labels — varies by brand)" : "");
     tdName.append(meta);
 
     // qty
