@@ -398,6 +398,163 @@
       }
     }
 
+    .qty {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* The ± buttons belong to the narrow layout only — a mouse has the number
+       field's own spinners, and the wide table has no room for them. */
+    .qty .step {
+      display: none;
+    }
+
+    /* ---------- calculator table, narrow screens ----------
+       Six columns with two fixed-width controls cannot fit a phone, so below
+       560px each entry stops being a row and becomes a block:
+
+           Food name                      ✕
+           12.6 g protein /100 g
+           [−] [ 3 ] [+]        [ large egg ]
+           150 g                     18.9 g
+
+       Only #view-calc is restyled; the browse table keeps its own sideways
+       scroll, where eight comparable columns are the point. */
+    @media (max-width: 560px) {
+
+      /* Take the table out of table layout entirely; leaving it half in means
+         the browser inventing anonymous cells around the stacked rows. */
+      #view-calc table,
+      #view-calc thead,
+      #view-calc tbody {
+        display: block;
+      }
+
+      /* Nothing left to label once the cells stack — but the clear-all ✕ lives
+         in this row, so it stays, pushed to the right. */
+      #view-calc thead th:not(.col-act) {
+        display: none;
+      }
+
+      #view-calc thead tr {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* 2px on the right so the clear-all ✕ lands in the same vertical line as
+         the per-row ✕ below it, which hangs 2px off its cell for the same reason. */
+      #view-calc thead th.col-act {
+        width: auto;
+        padding: 4px 2px;
+        border-bottom: none;
+      }
+
+      #view-calc tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "food  act"
+          "qty   unit"
+          "grams protein";
+        gap: 8px 10px;
+        align-items: center;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      #view-calc tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      #view-calc tbody td {
+        display: block;
+        padding: 0;
+        border: none;
+        text-align: left;
+      }
+
+      #view-calc td.col-food {
+        grid-area: food;
+      }
+
+      /* Each row is its own grid, so the right-hand column is only as wide as
+         that row's unit name — left-aligning the ✕ inside it would put every
+         row's ✕ at a different x. Pin it to the row's edge instead, and let the
+         button's own padding hang into the row padding so the glyph lines up
+         with the numbers underneath. */
+      #view-calc td.col-act {
+        grid-area: act;
+        align-self: start;
+        justify-self: end;
+        text-align: right;
+        margin-right: -10px;
+      }
+
+      #view-calc td.col-qty {
+        grid-area: qty;
+      }
+
+      #view-calc td.col-unit {
+        grid-area: unit;
+        text-align: right;
+      }
+
+      #view-calc td.grams {
+        grid-area: grams;
+        color: var(--text-dim);
+      }
+
+      #view-calc td.protein {
+        grid-area: protein;
+        text-align: right;
+      }
+
+      /* Without the header row these two numbers need to say what they are. */
+      #view-calc td.protein::after {
+        content: " protein";
+        font-weight: 400;
+        font-size: 12px;
+        color: var(--text-faint);
+      }
+
+      #view-calc td.empty {
+        grid-column: 1 / -1;
+      }
+
+      #view-calc .qty .step {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: 19px;
+        line-height: 1;
+        background: var(--surface-2);
+      }
+
+      #view-calc .qty input[type=number] {
+        width: 64px;
+        height: 40px;
+        text-align: center;
+        padding: 0 4px;
+      }
+
+      /* The ± buttons do this job now; two sets of controls is one too many. */
+      #view-calc .qty input[type=number]::-webkit-outer-spin-button,
+      #view-calc .qty input[type=number]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      #view-calc td.col-unit select {
+        min-width: 0;
+        max-width: 100%;
+        height: 40px;
+      }
+    }
+
     /* ---------- totals ---------- */
     .totals {
       display: flex;
@@ -1172,6 +1329,10 @@
 
     const proteinOf = entry => gramsOf(entry) * entry.food.p / 100;
 
+    // How far the ± buttons move the amount: weights and volumes in tens,
+    // countable portions (eggs, slices, scoops) one at a time.
+    const stepFor = unit => unit === "g" || unit === "ml" ? 10 : 1;
+
     /** Default portion: one of the food's own units if it has any, else 100 g. */
     function defaultPortion(food) {
       const named = unitsFor(food).slice(BASE_UNITS.length);
@@ -1446,6 +1607,7 @@
 
         // food
         const tdName = document.createElement("td");
+        tdName.className = "col-food";
         const n = document.createElement("div");
         n.className = "fname";
         n.textContent = entry.food.name;
@@ -1459,13 +1621,17 @@
 
         // qty
         const tdQty = document.createElement("td");
-        tdQty.className = "num";
+        tdQty.className = "num col-qty";
         const qty = document.createElement("input");
         qty.type = "number";
         qty.min = "0";
         qty.step = "any";
+        qty.inputMode = "decimal";
         qty.value = String(entry.qty);
         qty.setAttribute("aria-label", "Amount of " + entry.food.name);
+        // Focusing a field that already holds a number should mean "replace it",
+        // not "put the caret somewhere" — on a phone there is no easy select-all.
+        qty.addEventListener("focus", () => qty.select());
         qty.addEventListener("input", () => {
           const v = parseFloat(qty.value);
           entry.qty = Number.isFinite(v) && v >= 0 ? v : 0;
@@ -1473,10 +1639,39 @@
           renderTotals();
           save();
         });
-        tdQty.append(qty);
+
+        const stepper = document.createElement("div");
+        stepper.className = "qty";
+        const bump = dir => {
+          const step = stepFor(entry.unit);
+          // Snap to the step grid rather than adding to it, so 137 g + 10 reads
+          // 140, not 147. Rounded off at 2 decimals to keep float dust out.
+          const grid = dir > 0
+            ? Math.floor(entry.qty / step + 1e-9) * step + step
+            : Math.ceil(entry.qty / step - 1e-9) * step - step;
+          entry.qty = Math.max(0, +grid.toFixed(2));
+          qty.value = String(entry.qty);
+          renderDerived(tr, entry);
+          renderTotals();
+          save();
+        };
+        const stepBtn = (dir, glyph, verb) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "step";
+          b.textContent = glyph;
+          b.setAttribute("aria-label", verb + " amount of " + entry.food.name);
+          b.addEventListener("click", () => bump(dir));
+          return b;
+        };
+        // The two buttons only show in the narrow layout; a mouse has the
+        // number field's own spinners.
+        stepper.append(stepBtn(-1, "−", "Decrease"), qty, stepBtn(1, "+", "Increase"));
+        tdQty.append(stepper);
 
         // unit
         const tdUnit = document.createElement("td");
+        tdUnit.className = "col-unit";
         const sel = document.createElement("select");
         sel.setAttribute("aria-label", "Unit for " + entry.food.name);
         for (const u of unitsFor(entry.food)) {

@@ -45,7 +45,8 @@ check("match is bolded", !!opts[0].querySelector("b"));
 mousedown(opts[0]);
 check("row added, search cleared", rows().length === 1 && $("search").value === "");
 let tr = rows()[0];
-check("defaults to 1 large egg", cells(tr)[1] === "" && tr.querySelector("select").value === "large egg");
+const amount = row => row.querySelector("input[type=number]").value;
+check("defaults to 1 large egg", amount(tr) === "1" && tr.querySelector("select").value === "large egg");
 type(tr.querySelector("input[type=number]"), "3");
 tr = rows()[0];
 check("3 eggs = 150 g", cells(tr)[3] === "150 g", `got ${cells(tr)[3]}`);
@@ -57,7 +58,7 @@ const steak = [...$("results").querySelectorAll(".result")].find(r => r.textCont
 mousedown(steak);
 tr = rows()[1];
 const sel = tr.querySelector("select");
-check("steak has no named units, defaults to 100 g", sel.value === "g" && cells(tr)[1] === "");
+check("steak has no named units, defaults to 100 g", sel.value === "g" && amount(tr) === "100", amount(tr));
 type(tr.querySelector("input[type=number]"), "300");
 tr = rows()[1];
 check("300 g steak = 65.7 g protein", cells(tr)[4] === "65.7 g", `got ${cells(tr)[4]}`);
@@ -445,6 +446,34 @@ FOODS.forEach((f, i) => {
     tsvDrift.push(`${f.name}: tsv and index.html disagree`);
 });
 check("translations.tsv matches index.html", tsvDrift.length === 0, tsvDrift.slice(0,3).join("; "));
+
+// --- the ± stepper, which is how an amount gets changed on a phone ---
+const gramRow = rows().find(r => r.querySelector("select").value === "g");
+const gramInput = gramRow.querySelector("input[type=number]");
+const [gramMinus, gramPlus] = [...gramRow.querySelectorAll("button.step")];
+check("every row carries a − and a +", !!gramMinus && !!gramPlus);
+check("the buttons name the food they act on",
+  /^Decrease amount of /.test(gramMinus.getAttribute("aria-label")), gramMinus.getAttribute("aria-label"));
+type(gramInput, "137");
+const beforeStep = totalProtein();
+click(gramPlus);
+check("+ snaps grams up to the next 10", gramInput.value === "140", gramInput.value);
+check("the row's grams follow the stepper", cells(rows().find(r => r === gramRow))[3] === "140 g",
+  cells(gramRow)[3]);
+check("the total follows the stepper", totalProtein() > beforeStep, `${beforeStep} -> ${totalProtein()}`);
+click(gramMinus);
+check("− snaps grams back down by 10", gramInput.value === "130", gramInput.value);
+type(gramInput, "5");
+click(gramMinus);
+check("− stops at zero rather than going negative", gramInput.value === "0", gramInput.value);
+
+const countRow = rows().find(r => !["g", "oz", "ml"].includes(r.querySelector("select").value));
+const eggInput = countRow.querySelector("input[type=number]");
+type(eggInput, "2");
+click([...countRow.querySelectorAll("button.step")][1]);
+check("countable units step by one, not by ten", eggInput.value === "3", eggInput.value);
+check("stepping is persisted",
+  JSON.parse(window.localStorage.getItem("protein-calc.v1")).entries.some(e => e.qty === 3));
 
 // --- clear all, from the ✕ in the table header ---
 const clearBtn = $("clear-all");
