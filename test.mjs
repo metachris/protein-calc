@@ -8,7 +8,9 @@
  * and HTML escaping of food names coming from the API.
  *
  * Also asserts every built-in protein value still matches the USDA SR28 record
- * pinned for it in sources.json, so editing a number by hand fails the suite.
+ * pinned for it in sources.json, so editing a number by hand fails the suite,
+ * and that the home-screen install wiring (manifest, icons, service worker)
+ * still points at files that exist.
  */
 import { JSDOM } from "jsdom";
 import fs from "fs";
@@ -443,6 +445,45 @@ FOODS.forEach((f, i) => {
     tsvDrift.push(`${f.name}: tsv and index.html disagree`);
 });
 check("translations.tsv matches index.html", tsvDrift.length === 0, tsvDrift.slice(0,3).join("; "));
+
+// --- installable-to-home-screen wiring (manifest, icons, service worker) ---
+const manifestHref = doc.querySelector('link[rel=manifest]')?.getAttribute("href");
+check("index.html links a manifest", manifestHref === "manifest.webmanifest", String(manifestHref));
+
+const manifest = JSON.parse(fs.readFileSync(new URL("manifest.webmanifest", import.meta.url), "utf8"));
+check("manifest declares a standalone app", manifest.display === "standalone" && !!manifest.name && !!manifest.short_name);
+check("manifest start_url and scope are relative", manifest.start_url === "./" && manifest.scope === "./");
+check("manifest theme colour matches the light --bg", manifest.theme_color === "#f6f6f4");
+check("manifest ships a maskable icon", manifest.icons.some(i => i.purpose === "maskable"));
+check("manifest ships the 192 and 512 Android needs",
+  ["192x192", "512x512"].every(s => manifest.icons.some(i => i.sizes === s && i.purpose === "any")));
+
+// Declared icon sizes are read back out of each PNG header, so a regenerated or
+// hand-swapped file that no longer matches the manifest fails here.
+const pngSize = file => {
+  const b = fs.readFileSync(new URL(file, import.meta.url));
+  return b.readUInt32BE(16) + "x" + b.readUInt32BE(20);
+};
+const iconDrift = [];
+for (const icon of manifest.icons) {
+  try {
+    if (pngSize(icon.src) !== icon.sizes) iconDrift.push(`${icon.src} is ${pngSize(icon.src)}, manifest says ${icon.sizes}`);
+  } catch { iconDrift.push(`${icon.src} is missing`); }
+}
+check("every manifest icon exists at its declared size", iconDrift.length === 0, iconDrift.join("; "));
+
+const appleIcon = doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href");
+check("apple-touch-icon exists", !!appleIcon && fs.existsSync(new URL(appleIcon, import.meta.url)), String(appleIcon));
+check("apple-touch-icon is opaque 180x180 (iOS masks it itself)", pngSize(appleIcon) === "180x180");
+
+const sw = fs.readFileSync(new URL("sw.js", import.meta.url), "utf8");
+const shell = [...sw.match(/const SHELL = \[([^\]]*)\]/s)[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
+const missing = shell.filter(u => u !== "./" && !fs.existsSync(new URL(u, import.meta.url)));
+check("every precached file exists", missing.length === 0, missing.join("; "));
+check("precache covers the page itself", shell.includes("./index.html") && shell.includes("./manifest.webmanifest"));
+check("worker leaves cross-origin requests (the USDA API) alone",
+  /url\.origin !== self\.location\.origin\) return/.test(sw));
+
 
 console.log("\n" + (fail ? fail + " FAILURE(S)" : "all checks passed"));
 process.exit(fail ? 1 : 0);
