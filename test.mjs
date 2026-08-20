@@ -578,6 +578,73 @@ check("recents survive a reload",
     === recChips().join(" | "));
 
 
+// --- manual ordering: hold a row and drag it, or Alt+Arrow from the keyboard ---
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const ordDom = new JSDOM(html, { runScripts: "dangerously", url: "https://localhost/", pretendToBeVisual: true });
+const ordWin = ordDom.window, ordDoc = ordWin.document;
+const ordAdd = q => {
+  const el = ordDoc.getElementById("search");
+  el.value = q;
+  el.dispatchEvent(new ordWin.Event("input", { bubbles: true }));
+  ordDoc.querySelector(".result").dispatchEvent(new ordWin.MouseEvent("mousedown", { bubbles: true }));
+};
+const ordRows = () => [...ordDoc.getElementById("rows").querySelectorAll("tr")];
+const ordNames = () => ordRows().map(r => r.querySelector(".fname").textContent);
+const pointer = (el, type, y = 10) => el.dispatchEvent(new ordWin.MouseEvent(type, { bubbles: true, clientX: 10, clientY: y }));
+["egg, whole", "skyr", "almonds"].forEach(ordAdd);
+check("rows start in the order they were added",
+  ordNames().join(" | ") === "Egg, whole, raw | Skyr, plain | Almonds", ordNames().join(" | "));
+
+// keyboard
+const nth = i => ordDoc.querySelector(`#rows tr:nth-child(${i}) input[type=number]`);
+const altArrow = (el, key) => el.dispatchEvent(new ordWin.KeyboardEvent("keydown", { key, altKey: true, bubbles: true }));
+altArrow(nth(3), "ArrowUp");
+check("Alt+ArrowUp moves an entry up one place",
+  ordNames().join(" | ") === "Egg, whole, raw | Almonds | Skyr, plain", ordNames().join(" | "));
+check("focus follows the row it moved", ordDoc.activeElement === nth(2));
+altArrow(nth(1), "ArrowUp");
+check("Alt+ArrowUp on the first row does nothing",
+  ordNames()[0] === "Egg, whole, raw", ordNames().join(" | "));
+altArrow(nth(3), "ArrowDown");
+check("Alt+ArrowDown on the last row does nothing", ordNames().length === 3, ordNames().join(" | "));
+
+// long press. jsdom has no layout, so the pointer geometry that decides *where*
+// a row lands cannot run here — what is checked is the lift, the commit of
+// whatever order the DOM ends up in, and the cleanup.
+check("nothing is lifted before the hold elapses", !ordDoc.querySelector("#rows tr.dragging"));
+pointer(ordRows()[0].querySelector(".fname"), "pointerdown");
+await sleep(600);
+const lifted = ordRows()[0];
+check("holding a row lifts it", lifted.classList.contains("dragging") && ordDoc.body.classList.contains("reordering"));
+ordDoc.getElementById("rows").insertBefore(lifted, ordRows()[2]);   // stands in for the drag
+pointer(ordDoc, "pointerup");
+check("dropping commits the new order",
+  ordNames().join(" | ") === "Almonds | Egg, whole, raw | Skyr, plain", ordNames().join(" | "));
+check("the new order is persisted",
+  JSON.parse(ordWin.localStorage.getItem("protein-calc.v1")).entries.map(e => e.food.name).join(" | ")
+    === "Almonds | Egg, whole, raw | Skyr, plain");
+check("the lift is cleaned up on drop",
+  !ordDoc.querySelector("#rows tr.dragging") && !ordDoc.body.classList.contains("reordering"));
+
+pointer(ordDoc.querySelector("#rows tr input[type=number]"), "pointerdown");
+await sleep(600);
+check("holding the amount field does not start a drag", !ordDoc.querySelector("#rows tr.dragging"));
+pointer(ordDoc, "pointerup");
+
+pointer(ordRows()[0].querySelector(".fname"), "pointerdown");
+pointer(ordDoc, "pointermove", 40);   // a scroll, not a hold
+await sleep(600);
+check("sliding a finger before the hold elapses cancels it — that was a scroll",
+  !ordDoc.querySelector("#rows tr.dragging"));
+pointer(ordDoc, "pointerup");
+
+check("the hint tells you the gesture exists", /hold a row to reorder/.test(ordDoc.getElementById("saved-note").textContent),
+  ordDoc.getElementById("saved-note").textContent);
+[...ordDoc.querySelectorAll("#rows tr button.ghost")].slice(1).forEach(b => b.dispatchEvent(new ordWin.MouseEvent("click", { bubbles: true })));
+check("no reorder hint when a single item cannot be reordered",
+  !/reorder/.test(ordDoc.getElementById("saved-note").textContent), ordDoc.getElementById("saved-note").textContent);
+
+
 // --- installable-to-home-screen wiring (manifest, icons, service worker) ---
 const manifestHref = doc.querySelector('link[rel=manifest]')?.getAttribute("href");
 check("index.html links a manifest", manifestHref === "manifest.webmanifest", String(manifestHref));

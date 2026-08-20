@@ -398,6 +398,41 @@
       }
     }
 
+    /* ---------- reordering ---------- */
+    /* Long-press is the reorder gesture in this table, so the browser's own
+       long-press behaviours (callout menu, selection magnifier) have to go —
+       only over the text, never over the fields. */
+    #view-calc tbody tr {
+      -webkit-touch-callout: none;
+    }
+
+    #view-calc td.col-food,
+    #view-calc td.grams,
+    #view-calc td.protein {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    #view-calc tbody tr.dragging {
+      position: relative;
+      z-index: 5;
+      background: var(--surface);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+      cursor: grabbing;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #view-calc tbody tr.dragging {
+        box-shadow: 0 8px 22px rgba(0, 0, 0, .5);
+      }
+    }
+
+    body.reordering {
+      cursor: grabbing;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
     /* ---------- recents ---------- */
     .recents {
       display: flex;
@@ -1197,9 +1232,9 @@
        ============================================================ */
     const FOODS = [
       // ---- Eggs & dairy ----
-      { name: "Egg, whole, raw", group: "Eggs & dairy", p: 12.6, k: 143, de: ["Ei, roh", "Hühnerei", "Eier"], pl: ["Jajko, surowe", "jaja", "jajka", "jajo"], units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },  // SR28 01123
-      { name: "Egg white, raw", group: "Eggs & dairy", p: 10.9, k: 52, de: ["Eiklar, roh", "Eiweiß"], pl: ["Białko jaja", "białka jaj", "białko jajka"], units: [["large egg white", 33]] },  // SR28 01124
-      { name: "Egg yolk, raw", group: "Eggs & dairy", p: 15.9, k: 322, de: ["Eigelb, roh", "Dotter"], pl: ["Żółtko jaja", "żółtka"], units: [["large yolk", 17]] },  // SR28 01125
+      { name: "Egg, whole", group: "Eggs & dairy", p: 12.6, k: 143, de: ["Ei", "Hühnerei", "Eier"], pl: ["Jajko, surowe", "jaja", "jajka", "jajo"], units: [["large egg", 50], ["medium egg", 44], ["jumbo egg", 63]] },  // SR28 01123
+      { name: "Egg white", group: "Eggs & dairy", p: 10.9, k: 52, de: ["Eiklar", "Eiweiß"], pl: ["Białko jaja", "białka jaj", "białko jajka"], units: [["large egg white", 33]] },  // SR28 01124
+      { name: "Egg yolk", group: "Eggs & dairy", p: 15.9, k: 322, de: ["Eigelb", "Dotter"], pl: ["Żółtko jaja", "żółtka"], units: [["large yolk", 17]] },  // SR28 01125
       { name: "Milk, whole (3.25%)", group: "Eggs & dairy", p: 3.1, k: 61, de: ["Vollmilch", "Milch 3,5%", "Milch"], pl: ["Mleko pełnotłuste", "mleko 3,2%", "mleko"], units: [["cup", 244], ["ml", 1.03]] },  // SR28 01211
       { name: "Milk, skim", group: "Eggs & dairy", p: 3.4, k: 34, de: ["Magermilch", "fettarme Milch", "Milch 0,1%"], pl: ["Mleko odtłuszczone", "mleko chude", "mleko 0%"], units: [["cup", 245], ["ml", 1.03]] },  // SR28 01085
       { name: "Greek yogurt, plain, nonfat", group: "Eggs & dairy", p: 10.2, k: 59, de: ["Griechischer Joghurt, fettfrei", "griechischer Joghurt 0%"], pl: ["Jogurt grecki, odtłuszczony", "jogurt grecki 0%"], units: [["container (170 g)", 170], ["cup", 245]] },  // SR28 01256
@@ -1694,6 +1729,7 @@
 
       for (const entry of state.entries) {
         const tr = document.createElement("tr");
+        tr.dataset.key = entry.key;
 
         // food
         const tdName = document.createElement("td");
@@ -1722,6 +1758,12 @@
         // Focusing a field that already holds a number should mean "replace it",
         // not "put the caret somewhere" — on a phone there is no easy select-all.
         qty.addEventListener("focus", () => qty.select());
+        // Dragging is pointer-only, so give the keyboard the same power.
+        qty.addEventListener("keydown", ev => {
+          if (!ev.altKey || (ev.key !== "ArrowUp" && ev.key !== "ArrowDown")) return;
+          ev.preventDefault();
+          moveEntry(entry, ev.key === "ArrowUp" ? -1 : 1);
+        });
         qty.addEventListener("input", () => {
           const v = parseFloat(qty.value);
           entry.qty = Number.isFinite(v) && v >= 0 ? v : 0;
@@ -1852,7 +1894,8 @@
 
       const savedNote = $("saved-note");
       savedNote.textContent = state.entries.length
-        ? `${state.entries.length} item${state.entries.length === 1 ? "" : "s"} · saved in this browser`
+        ? `${state.entries.length} item${state.entries.length === 1 ? "" : "s"} · ` +
+        (state.entries.length > 1 ? "hold a row to reorder · " : "") + "saved in this browser"
         : "";
 
       // so adding from the browse view gives visible feedback on the other tab
@@ -1885,6 +1928,110 @@
         box.append(chip);
       }
     }
+
+    /* ---------- manual ordering ----------
+       Hold a row for half a second and it lifts off; drag it past a neighbour
+       and they swap. The DOM is the source of truth during the drag (moving one
+       <tr> is cheaper and steadier than re-rendering on every pointermove), and
+       state.entries is rewritten from the row order once the finger lifts. */
+    const HOLD_MS = 450;   // long enough that scrolling past a row never triggers it
+    const HOLD_SLOP = 8;   // px of drift that means "this was a scroll, not a hold"
+    let hold = null;       // pointer is down, waiting out the timer
+    let drag = null;       // a row is up and following the pointer
+
+    function moveEntry(entry, dir) {
+      const i = state.entries.indexOf(entry);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= state.entries.length) return;
+      [state.entries[i], state.entries[j]] = [state.entries[j], state.entries[i]];
+      render();
+      const back = rowsEl.querySelector(`tr[data-key="${entry.key}"] input[type=number]`);
+      if (back) back.focus();
+    }
+
+    function cancelHold() {
+      if (!hold) return;
+      clearTimeout(hold.timer);
+      hold = null;
+    }
+
+    function beginDrag(tr, pointerId, y) {
+      drag = { tr, pointerId, startY: y, moved: false };
+      tr.classList.add("dragging");
+      document.body.classList.add("reordering");
+      try { tr.setPointerCapture(pointerId); } catch (err) { /* not every engine has it */ }
+    }
+
+    function dragTo(y) {
+      const tr = drag.tr;
+      drag.moved = true;
+      tr.style.transform = "translateY(" + (y - drag.startY) + "px)";
+
+      // getBoundingClientRect includes the transform, so this asks where the row
+      // *looks*, not where it would sit if it were dropped.
+      const box = tr.getBoundingClientRect();
+      const prev = tr.previousElementSibling;
+      const next = tr.nextElementSibling;
+      let ref;   // undefined: stay where it is. null: move to the end.
+      if (prev && box.top < prev.getBoundingClientRect().top + prev.offsetHeight / 2) ref = prev;
+      else if (next && box.bottom > next.getBoundingClientRect().bottom - next.offsetHeight / 2) ref = next.nextElementSibling;
+      if (ref === undefined) return;
+
+      // The swap moves the row's layout position under it; shifting startY by the
+      // same amount keeps the row pinned to the pointer instead of jumping.
+      const was = tr.getBoundingClientRect().top;
+      rowsEl.insertBefore(tr, ref);
+      drag.startY += tr.getBoundingClientRect().top - was;
+      tr.style.transform = "translateY(" + (y - drag.startY) + "px)";
+    }
+
+    function endDrag() {
+      if (!drag) return;
+      const { tr, moved, pointerId } = drag;
+      tr.style.transform = "";
+      tr.classList.remove("dragging");
+      document.body.classList.remove("reordering");
+      try { tr.releasePointerCapture(pointerId); } catch (err) { /* see above */ }
+      drag = null;
+
+      const order = [...rowsEl.children].map(r => r.dataset.key);
+      state.entries.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+      render();
+
+      // Releasing over a control would otherwise fire its click — dropping a row
+      // on the ✕ must not delete it. Short-lived so a real click still lands.
+      if (moved) {
+        const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); };
+        document.addEventListener("click", swallow, { capture: true, once: true });
+        setTimeout(() => document.removeEventListener("click", swallow, { capture: true }), 250);
+      }
+    }
+
+    rowsEl.addEventListener("pointerdown", ev => {
+      if (ev.button > 0 || state.entries.length < 2) return;
+      const tr = ev.target.closest("tr");
+      if (!tr || !tr.dataset.key) return;
+      if (ev.target.closest("input, select, button")) return;   // the controls keep working
+      cancelHold();
+      hold = {
+        pointerId: ev.pointerId, x: ev.clientX, y: ev.clientY,
+        timer: setTimeout(() => { const y = hold.y; hold = null; beginDrag(tr, ev.pointerId, y); }, HOLD_MS),
+      };
+    });
+
+    document.addEventListener("pointermove", ev => {
+      if (drag && ev.pointerId === drag.pointerId) { dragTo(ev.clientY); return; }
+      if (hold && ev.pointerId === hold.pointerId &&
+        (Math.abs(ev.clientY - hold.y) > HOLD_SLOP || Math.abs(ev.clientX - hold.x) > HOLD_SLOP)) cancelHold();
+    });
+
+    for (const evName of ["pointerup", "pointercancel"]) {
+      document.addEventListener(evName, () => { cancelHold(); endDrag(); });
+    }
+
+    // A held row must not scroll the page or raise the long-press menu under it.
+    document.addEventListener("touchmove", ev => { if (drag) ev.preventDefault(); }, { passive: false });
+    rowsEl.addEventListener("contextmenu", ev => { if (drag || hold) ev.preventDefault(); });
 
     function render() {
       renderRows();
