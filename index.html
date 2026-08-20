@@ -383,6 +383,21 @@
       width: 34px;
     }
 
+    /* The header ✕ would otherwise inherit the 11.5px uppercase heading type. */
+    thead th .clear-all {
+      font-size: 14px;
+      letter-spacing: 0;
+      line-height: 1;
+      text-transform: none;
+    }
+
+    /* A 4px-padded ✕ is a fine mouse target and a poor thumb one. */
+    @media (pointer: coarse) {
+      button.ghost {
+        padding: 8px 10px;
+      }
+    }
+
     /* ---------- totals ---------- */
     .totals {
       display: flex;
@@ -815,7 +830,12 @@
               <th>Unit</th>
               <th class="num">Grams</th>
               <th class="num">Protein</th>
-              <th class="col-act"></th>
+              <th class="col-act">
+                <!-- Sits in the same column as the per-row ✕, so it reads as
+                     "remove" applied to the whole table. Shown only when there
+                     is something to clear; renderRows() toggles it. -->
+                <button id="clear-all" class="ghost clear-all" type="button" hidden>✕</button>
+              </th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
@@ -876,10 +896,7 @@
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-        <div class="hint" id="saved-note"></div>
-        <button id="clear-all" class="ghost" style="color:var(--text-dim)">Clear all items</button>
-      </div>
+      <div class="hint" id="saved-note"></div>
 
     </div><!-- /view-calc -->
 
@@ -1438,6 +1455,12 @@
     function renderRows() {
       rowsEl.textContent = "";
 
+      const clearAll = $("clear-all");
+      clearAll.hidden = !state.entries.length;
+      const label = "Remove all " + state.entries.length + " item" + (state.entries.length === 1 ? "" : "s");
+      clearAll.title = label;
+      clearAll.setAttribute("aria-label", label);
+
       if (!state.entries.length) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
@@ -1584,7 +1607,8 @@
 
     $("clear-all").addEventListener("click", () => {
       if (!state.entries.length) return;
-      if (!confirm("Remove all " + state.entries.length + " items?")) return;
+      const n = state.entries.length;
+      if (!confirm("Remove all " + n + " item" + (n === 1 ? "" : "s") + "?")) return;
       state.entries = [];
       render();
     });

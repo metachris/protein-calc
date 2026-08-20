@@ -446,6 +446,24 @@ FOODS.forEach((f, i) => {
 });
 check("translations.tsv matches index.html", tsvDrift.length === 0, tsvDrift.slice(0,3).join("; "));
 
+// --- clear all, from the ✕ in the table header ---
+const clearBtn = $("clear-all");
+const rowsBeforeClear = rows().length;
+check("header ✕ is offered once the table has rows", rowsBeforeClear > 0 && !clearBtn.hidden, `${rowsBeforeClear} rows`);
+check("header ✕ says how much it will remove", clearBtn.title === `Remove all ${rowsBeforeClear} items`, clearBtn.title);
+window.confirm = () => false;
+click(clearBtn);
+check("declining the confirm keeps every row", rows().length === rowsBeforeClear);
+window.confirm = () => true;
+click(clearBtn);
+check("clear all empties the table", rows().length === 0 && $("rows").textContent.includes("Nothing added yet"));
+check("total resets to 0.0 g", $("total").textContent.trim() === "0.0 g", $("total").textContent.trim());
+check("header ✕ hides when there is nothing to clear", clearBtn.hidden);
+check("cleared table is persisted", JSON.parse(window.localStorage.getItem("protein-calc.v1")).entries.length === 0);
+check("clearing entries keeps imported USDA foods",
+  JSON.parse(window.localStorage.getItem("protein-calc.v1")).customFoods.length === 1);
+
+
 // --- installable-to-home-screen wiring (manifest, icons, service worker) ---
 const manifestHref = doc.querySelector('link[rel=manifest]')?.getAttribute("href");
 check("index.html links a manifest", manifestHref === "manifest.webmanifest", String(manifestHref));
