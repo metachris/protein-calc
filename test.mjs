@@ -118,12 +118,16 @@ check("no-match points at USDA", $("results").textContent.includes("USDA"));
 const usdaSample = { foods: [
   { fdcId: 1, description: "GREEK YOGURT, PLAIN", dataType: "Branded", brandName: "ACME FOODS",
     servingSize: 170, servingSizeUnit: "g",
-    foodNutrients: [{ nutrientId: 1003, nutrientName: "Protein", value: 10.6, unitName: "G" }] },
+    foodNutrients: [{ nutrientId: 1003, nutrientName: "Protein", value: 10.6, unitName: "G" },
+      { nutrientId: 1062, nutrientName: "Energy", value: 247, unitName: "kJ" },
+      { nutrientId: 1008, nutrientName: "Energy", value: 59, unitName: "KCAL" }] },
   { fdcId: 2, description: "Skyr, plain", dataType: "Foundation",
     foodNutrients: [{ nutrientNumber: "203", nutrientName: "Protein", value: 11.2 }] },
   { fdcId: 3, description: "Water, bottled", dataType: "Branded", foodNutrients: [] },
 ] };
-window.renderUsdaResults(usdaSample.foods.map(f => ({ raw: f, p: window.usdaProtein(f) })).filter(f => f.p !== null));
+window.renderUsdaResults(usdaSample.foods
+  .map(f => ({ raw: f, p: window.usdaProtein(f), k: window.usdaEnergy(f) }))
+  .filter(f => f.p !== null));
 const urs = [...$("usda-results").querySelectorAll(".ur")];
 check("USDA: protein read from both id and number forms", urs.length === 2, `${urs.length} rows`);
 check("USDA: SHOUTED name title-cased", urs[0].querySelector(".name").textContent.startsWith("Greek Yogurt, Plain"),
@@ -138,6 +142,15 @@ check("USDA: serving size became the default unit", added.querySelector("select"
 check("USDA: 1 serving = 170 g", cells(added)[3] === "170 g", cells(added)[3]);
 check("USDA: 1 serving = 18.0 g protein", cells(added)[4] === "18.0 g", cells(added)[4]);
 check("USDA: food saved to custom list", JSON.parse(window.localStorage.getItem("protein-calc.v1")).customFoods.length === 1);
+const importedYogurt = JSON.parse(window.localStorage.getItem("protein-calc.v1")).customFoods[0];
+check("USDA: energy imported as kcal, ignoring the kJ record", importedYogurt.k === 59, String(importedYogurt.k));
+
+// The Skyr record has no energy nutrient at all — import it too, so both the
+// browse table and the calorie totals get exercised against an unknown.
+click(urs[1].querySelector("button"));
+const importedSkyr = JSON.parse(window.localStorage.getItem("protein-calc.v1")).customFoods[0];
+check("USDA: a record with no energy nutrient imports as unknown, not zero",
+  importedSkyr.k === null, JSON.stringify(importedSkyr.k));
 type($("search"), "greek yog");
 check("USDA: saved food now searchable and ranked first",
   $("results").querySelector(".result .name").textContent.includes("Greek Yogurt, Plain"),
@@ -215,9 +228,16 @@ click($("tab-browse"));
 check("tab switches to browse", !$("view-browse").hidden && $("view-calc").hidden);
 check("tabs report selection to a11y tree",
   $("tab-browse").getAttribute("aria-selected") === "true" && $("tab-calc").getAttribute("aria-selected") === "false");
-check("browse lists every built-in food plus imported ones", brows().length === 131, `${brows().length}`);
+check("browse lists every built-in food plus imported ones", brows().length === 132, `${brows().length}`);
 check("browse includes USDA-imported custom foods",
   bnames().some(n => n.startsWith("Greek Yogurt, Plain")));
+const energyCell = name => bcells(brows().find(r => r.querySelector(".bname").textContent.startsWith(name)));
+check("imported food shows its energy figure", energyCell("Greek Yogurt, Plain")[5] === "59",
+  energyCell("Greek Yogurt, Plain")[5]);
+check("imported food with no energy reads —, not NaN", energyCell("Skyr, plain")[5] === "—",
+  energyCell("Skyr, plain")[5]);
+check("and its protein/100 kcal reads — rather than 0.0 g", energyCell("Skyr, plain")[6] === "—",
+  energyCell("Skyr, plain")[6]);
 
 // --- default sort: protein per 100 g, descending ---
 check("defaults to protein/100 g descending",
@@ -239,8 +259,12 @@ check("largest value gets a full-width bar",
 sortBy("pk");
 check("bar moves to protein/100 kcal when sorted there", barCols(brows()[0])[6] === true &&
   barCols(brows()[0]).filter(Boolean).length === 1);
-const perKcal = brows().map(r => parseFloat(bcells(r)[6]));
+const perKcalText = brows().map(r => bcells(r)[6]);
+const perKcal = perKcalText.filter(t => t !== "—").map(t => parseFloat(t));
 check("protein/100 kcal sorted descending", perKcal.every((v,i) => i === 0 || perKcal[i-1] >= v));
+check("foods with no energy figure sink to the bottom, shown as —",
+  perKcalText.slice(perKcal.length).every(t => t === "—"),
+  perKcalText.slice(perKcal.length).join(" | "));
 check("per-calorie ranking is the educational one (egg white beats almonds)",
   bnames().indexOf("Egg white, raw") < bnames().indexOf("Almonds"),
   `egg white #${bnames().indexOf("Egg white, raw")+1}, almonds #${bnames().indexOf("Almonds")+1}`);
@@ -475,6 +499,13 @@ check("countable units step by one, not by ten", eggInput.value === "3", eggInpu
 check("stepping is persisted",
   JSON.parse(window.localStorage.getItem("protein-calc.v1")).entries.some(e => e.qty === 3));
 
+// --- calories, from the k figure the browse view already used ---
+check("energy total is shown", /kcal$/.test($("total-kcal").textContent), $("total-kcal").textContent);
+check("protein per 100 kcal is shown for the meal", /g$/.test($("total-perkcal").textContent),
+  $("total-perkcal").textContent);
+check("an entry with no energy figure is called out, not silently dropped",
+  !$("kcal-note").hidden && /no energy figure/.test($("kcal-note").textContent), $("kcal-note").textContent);
+
 // --- clear all, from the ✕ in the table header ---
 const clearBtn = $("clear-all");
 const rowsBeforeClear = rows().length;
@@ -490,7 +521,61 @@ check("total resets to 0.0 g", $("total").textContent.trim() === "0.0 g", $("tot
 check("header ✕ hides when there is nothing to clear", clearBtn.hidden);
 check("cleared table is persisted", JSON.parse(window.localStorage.getItem("protein-calc.v1")).entries.length === 0);
 check("clearing entries keeps imported USDA foods",
-  JSON.parse(window.localStorage.getItem("protein-calc.v1")).customFoods.length === 1);
+  JSON.parse(window.localStorage.getItem("protein-calc.v1")).customFoods.length === 2);
+
+
+// A fresh page with one known food: the arithmetic has to be checkable by hand.
+const calDom = new JSDOM(html, { runScripts: "dangerously", url: "https://localhost/", pretendToBeVisual: true });
+const calDoc = calDom.window.document;
+const calSearch = calDoc.getElementById("search");
+calSearch.value = "egg, whole";
+calSearch.dispatchEvent(new calDom.window.Event("input", { bubbles: true }));
+calDoc.querySelector(".result").dispatchEvent(new calDom.window.MouseEvent("mousedown", { bubbles: true }));
+// One large egg: 50 g of a 143 kcal/100 g food = 71.5 kcal, 6.3 g protein.
+check("energy = grams × kcal per 100 g", calDoc.getElementById("total-kcal").textContent === "72 kcal",
+  calDoc.getElementById("total-kcal").textContent);
+check("meal protein per 100 kcal is the ratio of the two totals",
+  calDoc.getElementById("total-perkcal").textContent === "8.8 g",
+  calDoc.getElementById("total-perkcal").textContent);
+check("no note when every food has an energy figure", calDoc.getElementById("kcal-note").hidden);
+
+// --- recents: the foods you keep eating, one tap away ---
+const recDom = new JSDOM(html, { runScripts: "dangerously", url: "https://localhost/", pretendToBeVisual: true });
+const recWin = recDom.window, recDoc = recWin.document;
+const recChips = () => [...recDoc.getElementById("recents").querySelectorAll(".chip")].map(c => c.textContent);
+const recAdd = q => {
+  const el = recDoc.getElementById("search");
+  el.value = q;
+  el.dispatchEvent(new recWin.Event("input", { bubbles: true }));
+  recDoc.querySelector(".result").dispatchEvent(new recWin.MouseEvent("mousedown", { bubbles: true }));
+};
+check("no recents strip on a first visit", recDoc.getElementById("recents").hidden);
+recAdd("egg, whole");
+check("adding a food puts it in recents", recChips().join() === "Egg, whole, raw", recChips().join(" | "));
+recAdd("skyr");
+check("most recent comes first", recChips()[0] === "Skyr, plain", recChips().join(" | "));
+recAdd("egg, whole");
+check("re-adding moves the food back to the front instead of duplicating it",
+  recChips().join(" | ") === "Egg, whole, raw | Skyr, plain", recChips().join(" | "));
+
+const recRows = () => [...recDoc.getElementById("rows").querySelectorAll("tr")].filter(r => !r.querySelector("td.empty"));
+const rowsBeforeChip = recRows().length;
+recDoc.getElementById("search").value = "half-typed";
+recDoc.querySelector("#recents .chip").dispatchEvent(new recWin.MouseEvent("click", { bubbles: true }));
+check("tapping a chip adds the food", recRows().length === rowsBeforeChip + 1);
+check("the tapped chip confirms itself", !!recDoc.querySelector("#recents .chip.added"));
+check("tapping a chip leaves a half-typed search alone (no focus grab, no clear)",
+  recDoc.getElementById("search").value === "half-typed", recDoc.getElementById("search").value);
+
+for (const q of ["tuna, light", "cod", "almonds", "lentils", "tofu", "cheddar", "milk, whole", "walnuts"]) recAdd(q);
+check("recents are capped at 8", recChips().length === 8, `${recChips().length}`);
+check("the oldest recent falls off the end", !recChips().includes("Skyr, plain"), recChips().join(" | "));
+
+const recReload = new JSDOM(html, { runScripts: "dangerously", url: "https://localhost/", pretendToBeVisual: true,
+  beforeParse(w) { w.localStorage.setItem("protein-calc.v1", recWin.localStorage.getItem("protein-calc.v1")); } });
+check("recents survive a reload",
+  [...recReload.window.document.querySelectorAll("#recents .chip")].map(c => c.textContent).join(" | ")
+    === recChips().join(" | "));
 
 
 // --- installable-to-home-screen wiring (manifest, icons, service worker) ---

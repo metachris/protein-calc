@@ -398,6 +398,60 @@
       }
     }
 
+    /* ---------- recents ---------- */
+    .recents {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .recents-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-faint);
+      margin-right: 2px;
+    }
+
+    .chip {
+      max-width: 100%;
+      padding: 5px 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text-dim);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chip:hover {
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+
+    /* Brief confirmation that the tap landed — the new row is further down the
+       page than a thumb can see on a phone. */
+    .chip.added {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .chip.added::before {
+      content: "✓ ";
+    }
+
+    @media (pointer: coarse) {
+      .chip {
+        padding: 8px 13px;
+        font-size: 14px;
+      }
+    }
+
     .qty {
       display: inline-flex;
       align-items: center;
@@ -476,6 +530,13 @@
 
       #view-calc td.col-food {
         grid-area: food;
+      }
+
+      /* The name is what you scan the list by, and it has a whole line to
+         itself here — the 15px of the table row reads small on a phone. */
+      #view-calc td.col-food .fname {
+        font-size: 17px;
+        line-height: 1.35;
       }
 
       /* Each row is its own grid, so the right-hand column is only as wide as
@@ -965,6 +1026,10 @@
           <input type="search" id="search" autocomplete="off" spellcheck="false" placeholder="Search in English, German or Polish — eggs, Hähnchenbrust, twaróg…" role="combobox" aria-expanded="false" aria-controls="results" aria-autocomplete="list">
           <div class="results" id="results" role="listbox" hidden></div>
         </div>
+        <!-- The foods you keep eating, one tap away — filled by renderRecents(). -->
+        <div class="recents" id="recents" hidden>
+          <span class="recents-label">Recent</span>
+        </div>
       </div>
 
       <div class="card">
@@ -996,6 +1061,14 @@
             <div class="tot-label">Food weight</div>
             <div class="medium" id="total-grams">0 g</div>
           </div>
+          <div>
+            <div class="tot-label">Energy</div>
+            <div class="medium" id="total-kcal">0 kcal</div>
+          </div>
+          <div>
+            <div class="tot-label">Protein /100&nbsp;kcal</div>
+            <div class="medium" id="total-perkcal">—</div>
+          </div>
           <div class="spacer"></div>
           <div class="target-box">
             <div class="tot-label">Daily target</div>
@@ -1010,6 +1083,7 @@
             <div style="width:0%"></div>
           </div>
           <div class="hint" id="target-note" hidden></div>
+          <div class="hint" id="kcal-note" hidden></div>
         </div>
       </div>
 
@@ -1268,9 +1342,12 @@
     const STORE_KEY = "protein-calc.v1";
     const BASE_UNITS = [{ name: "g", grams: 1 }, { name: "oz", grams: 28.3495 }];
 
+    const RECENTS_MAX = 8;
+
     let state = {
       entries: [],      // { key, food: {name, brand, p, units}, qty, unit }
       customFoods: [],  // foods pulled in from USDA, same shape as FOODS entries
+      recents: [],      // food snapshots, most recently added first
       target: null,
       apiKey: "",
       pins: [],         // food names pinned to the top of the browse table
@@ -1288,6 +1365,9 @@
         const saved = JSON.parse(raw);
         if (Array.isArray(saved.entries)) state.entries = saved.entries;
         if (Array.isArray(saved.customFoods)) state.customFoods = saved.customFoods;
+        if (Array.isArray(saved.recents))
+          state.recents = saved.recents.filter(f => f && typeof f.name === "string" && Number.isFinite(f.p))
+            .slice(0, RECENTS_MAX);
         if (typeof saved.target === "number") state.target = saved.target;
         if (typeof saved.apiKey === "string") state.apiKey = saved.apiKey;
         if (Array.isArray(saved.pins)) state.pins = saved.pins.filter(n => typeof n === "string");
@@ -1328,6 +1408,9 @@
     }
 
     const proteinOf = entry => gramsOf(entry) * entry.food.p / 100;
+
+    /** Calories for an entry, or null where the food carries no energy figure. */
+    const kcalOf = entry => Number.isFinite(entry.food.k) ? gramsOf(entry) * entry.food.k / 100 : null;
 
     // How far the ± buttons move the amount: weights and volumes in tens,
     // countable portions (eggs, slices, scoops) one at a time.
@@ -1568,9 +1651,16 @@
 
     /** opts.stay keeps the caller's context (used by the browse view's + button,
         where clearing and refocusing the calculator's search box would be wrong). */
+    /** Same food twice is one entry in the list, moved back to the front. */
+    function rememberRecent(food) {
+      const same = f => f.name === food.name && (f.brand || "") === (food.brand || "");
+      state.recents = [food, ...state.recents.filter(f => !same(f))].slice(0, RECENTS_MAX);
+    }
+
     function addFood(food, opts = {}) {
       const { qty, unit } = defaultPortion(food);
       state.entries.push({ key: nextKey(), food, qty, unit });
+      rememberRecent(food);
       if (!opts.stay) {
         searchEl.value = "";
         matches = [];
@@ -1727,6 +1817,24 @@
       $("total").append(fmt(protein), Object.assign(document.createElement("span"), { textContent: " g" }));
       $("total-grams").textContent = fmtG(grams) + " g";
 
+      // Energy, over the entries that have a figure. Foods imported from USDA
+      // sometimes carry none, and inventing one would be worse than saying so —
+      // the ratio is taken over the same subset, so it stays internally honest.
+      const withEnergy = state.entries.filter(e => Number.isFinite(e.food.k));
+      const kcal = withEnergy.reduce((s, e) => s + kcalOf(e), 0);
+      const proteinRated = withEnergy.reduce((s, e) => s + proteinOf(e), 0);
+      $("total-kcal").textContent = withEnergy.length
+        ? Math.round(kcal).toLocaleString("en-US") + " kcal"
+        : "—";
+      $("total-perkcal").textContent = kcal > 0 ? fmt(proteinRated / kcal * 100) + " g" : "—";
+
+      const noEnergy = state.entries.length - withEnergy.length;
+      const kcalNote = $("kcal-note");
+      kcalNote.hidden = !noEnergy;
+      kcalNote.textContent = noEnergy
+        ? `${noEnergy} item${noEnergy === 1 ? "" : "s"} carr${noEnergy === 1 ? "ies" : "y"} no energy figure — left out of the calorie columns.`
+        : "";
+
       const bar = $("bar");
       const note = $("target-note");
       if (state.target && state.target > 0) {
@@ -1753,8 +1861,34 @@
       badge.textContent = String(state.entries.length);
     }
 
+    // Set while a chip's row is landing, so the chip can show it worked; the
+    // re-render that follows addFood() would otherwise wipe any local state.
+    let recentFlash = null;
+
+    function renderRecents() {
+      const box = $("recents");
+      box.hidden = !state.recents.length;
+      for (const old of [...box.querySelectorAll("button")]) old.remove();
+
+      for (const food of state.recents) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip" + (food.name === recentFlash ? " added" : "");
+        chip.textContent = food.name;
+        chip.title = (food.brand ? food.brand + " · " : "") + fmt(food.p) + " g protein /100 g";
+        chip.setAttribute("aria-label", "Add " + food.name);
+        chip.addEventListener("click", () => {
+          recentFlash = food.name;
+          addFood(food, { stay: true });   // no focus grab: a phone would open the keyboard
+          setTimeout(() => { recentFlash = null; renderRecents(); }, 900);
+        });
+        box.append(chip);
+      }
+    }
+
     function render() {
       renderRows();
+      renderRecents();
       renderTotals();
       save();
     }
@@ -1813,6 +1947,18 @@
       return hit && Number.isFinite(Number(hit.value)) ? Number(hit.value) : null;
     }
 
+    function usdaEnergy(food) {
+      const list = food.foodNutrients || [];
+      // Energy is reported as kcal (1008 / "208") and often *also* as kJ
+      // (1062 / "268"). Take the kcal record only — reading a kJ figure as
+      // calories would overstate everything by a factor of four.
+      const hit = list.find(n =>
+        !/kj/i.test(n.unitName || "") &&
+        (n.nutrientId === 1008 || n.nutrientNumber === "208" ||
+          ((n.nutrientName || "").toLowerCase() === "energy" && /kcal/i.test(n.unitName || ""))));
+      return hit && Number.isFinite(Number(hit.value)) ? Number(hit.value) : null;
+    }
+
     async function runUsdaSearch() {
       const q = $("usda-q").value.trim();
       const msg = $("usda-msg");
@@ -1844,7 +1990,7 @@
         }
         const data = await res.json();
         const foods = (data.foods || [])
-          .map(f => ({ raw: f, p: usdaProtein(f) }))
+          .map(f => ({ raw: f, p: usdaProtein(f), k: usdaEnergy(f) }))
           .filter(f => f.p !== null);
 
         msg.textContent = foods.length
@@ -1862,12 +2008,15 @@
       const out = $("usda-results");
       out.textContent = "";
 
-      for (const { raw, p } of foods) {
+      for (const { raw, p, k } of foods) {
         const food = {
           name: titleish(raw.description || "Unnamed food"),
           brand: raw.brandName || raw.brandOwner || "",
           group: raw.dataType === "Branded" ? "Branded (USDA)" : "USDA",
           p,
+          // Not every record carries energy; null means "unknown", and the
+          // browse and totals views say so rather than printing a number.
+          k: Number.isFinite(k) ? k : null,
           units: [],
         };
         // Branded foods often declare a serving size in grams — offer it as a unit.
@@ -1936,8 +2085,8 @@
       name: { label: "name", get: f => f.name, text: true },
       p: { label: "protein /100 g", get: f => f.p },
       pp: { label: "protein /portion", get: f => portionOf(f).protein },
-      k: { label: "energy /100 g", get: f => f.k },
-      pk: { label: "protein /100 kcal", get: f => f.k > 0 ? f.p / f.k * 100 : 0 },
+      k: { label: "energy /100 g", get: f => Number.isFinite(f.k) ? f.k : 0 },
+      pk: { label: "protein /100 kcal", get: f => Number.isFinite(f.k) && f.k > 0 ? f.p / f.k * 100 : 0 },
     };
 
     /** The portion a browse row is described by: first household unit, else 100 g. */
@@ -2114,8 +2263,8 @@
         cell("p", fmt(food.p) + " g"),
         tdPortion,
         cell("pp", fmt(portion.protein) + " g"),
-        cell("k", String(Math.round(food.k)), true),
-        cell("pk", fmt(COLS.pk.get(food)) + " g"),
+        cell("k", Number.isFinite(food.k) ? String(Math.round(food.k)) : "—", true),
+        cell("pk", Number.isFinite(food.k) && food.k > 0 ? fmt(COLS.pk.get(food)) + " g" : "—"),
         tdAct,
       );
       return tr;
